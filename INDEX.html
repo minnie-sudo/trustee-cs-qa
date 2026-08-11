@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信賴生醫 | 客服知識庫</title>
+<style>
+  :root{
+    --pink:#e6789a;
+    --pink-dark:#c85777;
+    --pink-light:#fdf1f4;
+    --rose:#f7cdd8;
+    --ink:#3a2c33;
+    --ink-soft:#7a6b71;
+    --card:#ffffff;
+    --bg:#fff8f9;
+    --border:#f0dbe1;
+    --shadow:0 4px 16px rgba(198,90,130,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:linear-gradient(160deg,var(--bg),var(--pink-light));
+    color:var(--ink);
+    min-height:100vh;
+  }
+
+  header.topbar{
+    background:var(--card);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:sticky;top:0;z-index:20;
+  }
+  header.topbar .brand{display:flex;align-items:center;gap:10px;}
+  header.topbar .brand .emoji{font-size:24px;}
+  header.topbar .brand h2{font-size:16px;margin:0;color:var(--pink-dark);}
+  header.topbar .brand span{font-size:11px;color:var(--ink-soft);}
+
+  .tabs{
+    display:flex;gap:8px;padding:16px 20px 0;max-width:1100px;margin:0 auto;
+  }
+  .tab-btn{
+    padding:10px 18px;border-radius:10px 10px 0 0;border:1px solid var(--border);
+    border-bottom:none;background:#fff;color:var(--ink-soft);cursor:pointer;font-size:14px;font-weight:600;
+  }
+  .tab-btn.active{background:var(--pink);color:#fff;border-color:var(--pink);}
+
+  main{max-width:1100px;margin:0 auto;padding:0 20px 60px;}
+  .panel{
+    background:var(--card);border:1px solid var(--border);border-radius:0 12px 12px 12px;
+    padding:24px;box-shadow:var(--shadow);
+  }
+  .panel h3{margin-top:0;font-size:16px;color:var(--pink-dark);}
+
+  /* ---------- QA layout: sidebar + content ---------- */
+  #qaSearch{
+    width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:10px;
+    font-size:14px;margin-bottom:16px;background:var(--pink-light);
+  }
+  .qa-layout{display:flex;gap:20px;align-items:flex-start;}
+  .qa-sidebar{
+    width:200px;flex:0 0 200px;display:flex;flex-direction:column;gap:4px;
+    position:sticky;top:96px;
+  }
+  .cat-btn{
+    display:flex;justify-content:space-between;align-items:center;gap:6px;
+    padding:10px 12px;border-radius:8px;border:1px solid transparent;
+    background:transparent;color:var(--ink);font-size:13px;cursor:pointer;text-align:left;
+  }
+  .cat-btn:hover{background:var(--pink-light);}
+  .cat-btn.active{background:var(--pink);color:#fff;font-weight:600;}
+  .cat-btn .cnt{font-size:11px;color:var(--ink-soft);}
+  .cat-btn.active .cnt{color:#ffe3ec;}
+  .sidebar-heading{
+    font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;
+    letter-spacing:0.5px;padding:14px 12px 4px;
+  }
+  .sidebar-heading:first-child{padding-top:2px;}
+
+  .qa-content{flex:1;min-width:0;}
+  .qa-count{font-size:12px;color:var(--ink-soft);margin-bottom:14px;}
+  .cat-heading{font-size:15px;font-weight:700;color:var(--pink-dark);margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+
+  .qa-card{
+    border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:12px;
+    background:var(--pink-light);
+  }
+  .qa-card .cat-tag{
+    display:inline-block;font-size:11px;color:var(--pink-dark);background:var(--rose);
+    border-radius:20px;padding:2px 10px;margin-bottom:8px;
+  }
+  .qa-card .sit-tag{
+    display:inline-block;font-size:11px;color:var(--ink-soft);background:#fff;border:1px solid var(--border);
+    border-radius:20px;padding:2px 10px;margin-bottom:8px;margin-left:6px;
+  }
+  .qa-card .q{font-weight:700;color:var(--pink-dark);margin-bottom:8px;font-size:14px;}
+  .qa-card .a{font-size:13px;line-height:1.7;color:var(--ink);white-space:pre-line;}
+  .qa-card .sop-toggle{
+    margin-top:10px;font-size:12px;color:var(--pink-dark);background:none;border:none;cursor:pointer;
+    padding:0;text-decoration:underline;
+  }
+  .qa-card .sop-box{
+    display:none;margin-top:8px;padding:10px 12px;background:#fff;border:1px dashed var(--border);
+    border-radius:8px;font-size:12px;color:var(--ink-soft);white-space:pre-line;line-height:1.6;
+  }
+  .qa-card .sop-box.open{display:block;}
+  .no-result{color:var(--ink-soft);font-size:13px;text-align:center;padding:30px 0;}
+
+  /* AI chat */
+  #chatBox{
+    height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;
+    padding:16px;background:var(--pink-light);margin-bottom:14px;display:flex;flex-direction:column;gap:10px;
+  }
+  .msg{max-width:80%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.6;white-space:pre-line;}
+  .msg.bot{background:#fff;border:1px solid var(--border);align-self:flex-start;}
+  .msg.user{background:var(--pink);color:#fff;align-self:flex-end;}
+  .msg.sys{background:transparent;color:var(--ink-soft);align-self:center;font-size:12px;}
+  .chat-input-row{display:flex;gap:8px;}
+  .chat-input-row input{
+    flex:1;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;
+  }
+  .chat-input-row button{
+    padding:0 20px;border:none;border-radius:10px;background:var(--pink);color:#fff;font-weight:600;cursor:pointer;
+  }
+  .chat-input-row button:disabled{background:#ddb9c4;cursor:not-allowed;}
+  .apikey-note{font-size:12px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;}
+  .apikey-row{display:flex;gap:8px;margin-bottom:14px;}
+  .apikey-row input{flex:1;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;}
+  .apikey-row button{padding:0 16px;border:none;border-radius:8px;background:var(--pink-dark);color:#fff;font-size:13px;cursor:pointer;}
+  .apikey-status{font-size:12px;margin-bottom:10px;}
+  .apikey-status.ok{color:#2e8b57;}
+  .apikey-status.missing{color:#c0392b;}
+
+  footer.foot{text-align:center;font-size:11px;color:var(--ink-soft);padding:24px 0;}
+
+  @media (max-width: 700px){
+    .qa-layout{flex-direction:column;}
+    .qa-sidebar{
+      width:100%;flex-direction:row;flex-wrap:wrap;position:static;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="emoji">💄</div>
+      <div>
+        <h2>信賴生醫 客服知識庫</h2>
+        <span>外包客服常見問題查詢系統</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabBtnQa" onclick="switchTab('qa')">📋 QA 查詢</button>
+    <button class="tab-btn" id="tabBtnAi" onclick="switchTab('ai')">🤖 AI 問答</button>
+  </div>
+
+  <main>
+    <!-- QA panel -->
+    <section class="panel" id="panelQa">
+      <input id="qaSearch" type="text" placeholder="🔍 搜尋所有分類的問題關鍵字…" oninput="onSearchInput()">
+
+      <div class="qa-layout">
+        <nav class="qa-sidebar" id="qaSidebar"></nav>
+        <div class="qa-content">
+          <div class="qa-count" id="qaCount"></div>
+          <div id="qaList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI panel -->
+    <section class="panel" id="panelAi" style="display:none;">
+      <h3>AI 問答助手</h3>
+      <div class="apikey-note">
+        本功能透過 Groq API 讓 AI 依據客服 QA 資料庫回答問題。金鑰僅儲存在您的瀏覽器中，不會上傳。<br>
+        📌 免費取得金鑰：前往 <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> 註冊申請。
+      </div>
+      <div class="apikey-row">
+        <input id="apiKeyInput" type="password" placeholder="貼上您的 Groq API 金鑰">
+        <button onclick="saveApiKey()">儲存金鑰</button>
+      </div>
+      <div class="apikey-status" id="apiKeyStatus"></div>
+
+      <div id="chatBox"></div>
+      <div class="chat-input-row">
+        <input id="chatInput" type="text" placeholder="輸入客人的問題，例如：訂單可以取消嗎？" onkeydown="if(event.key==='Enter')sendChat();">
+        <button id="chatSendBtn" onclick="sendChat()">送出</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">信賴生醫 · 客服知識庫（內部系統，僅供授權人員使用）</footer>
+</div>
+
+<script>
+/* ============ Knowledge base ============ */
+/* 分類結構：每個分類 = 一個分頁，items 內為 QA 卡片 */
+const GENERAL_CATEGORIES = [
+  {
+    id: 'basic', name: '基本問題', icon: '📌',
+    items: [
+      { q: '如何成為會員？', a: `點擊畫面右上角人像圖案，選擇「註冊會員」，
+「使用Line註冊」或填寫用戶名、電郵、密碼，即可註冊成為會員。
+
+您也可以直接將商品加入購物車後，點擊畫面右上角購物車圖案，接續「訂單結帳」，同上述步驟，即可註冊成為會員。`, sop: '直接複製貼上給他' },
+      { q: '發票開立方式有哪些？', a: `雲端發票：
+1. 會員載具（發票資訊會寄到您的電郵）
+2. 手機條碼（請輸入您的手機條碼）
+3. 自然人憑證手機條碼（請輸入自然人憑證條碼）
+
+捐贈發票：
+若選擇捐贈，將出現可捐贈的基金會供您選擇
+
+公司戶發票：
+請填寫「發票抬頭」及「統一編號」`, sop: '直接複製貼上給他' },
+      { q: '運送方式有哪些？', a: `配合物流(官網)
+宅配：黑貓宅急便
+超商：7-11`, sop: '直接複製貼上給他' },
+      { q: '請問你們有客服電話嗎？是多少？', a: `若您有任何問題或需要協助，歡迎透過以下客服聯繫方式，我們會盡快回覆您！
+1. 登入您的官網會員用官方客服聯絡我們
+2. 綁定我們的LINE會員直接在LINE上聯繫我們
+⏱ 服務時間：週一到週五 10:00-19:00（國定假日除外）
+📧 聯絡信箱：ec@trusteebio.com`, sop: '直接複製貼上給他' },
+      { q: '請問韓國商品皆是正品嗎？', a: `您好，我們所販售的韓國品牌商品皆為正規代理商授權進口的原廠正品，請您放心選購。`, sop: '直接複製貼上給他' },
+      { q: '因為沒注意到到貨通知or忘記取貨，想重新寄出～', situation: '想重寄的訂單', a: `您好，我們可以幫您重寄，但這邊要先跟您說明以下兩點：
+1. 如需重寄，需等包裹退回成功才會幫您重寄
+2. 重寄的運費需由您承擔唷謝謝！！
+7-11/宅配：100元
+如確定需要重寄的話請提供以下的資料謝謝：
+訂單號碼：
+姓名：
+電話：
+收件地址or門市：
+備註：`, sop: '如果客人說沒注意到貨已抵達，或是忘記取貨的話請直接複製貼上給他。等客人回傳資料後，請交給負責人minnie請他協助重寄。' }
+    ]
+  },
+  {
+    id: 'payment', name: '付款問題', icon: '💳',
+    items: [
+      { q: '可以用哪種方式付款?', a: `您好，我們有提供LINE PAY、APPLE PAY以及信用卡付款。`, sop: '直接複製貼上給他' },
+      { q: 'Line Pay付款失敗', situation: 'Line Pay付款失敗', a: `您好，如使用LINE PAY結帳時當下無法完成付款或跳轉出頁面，系統會將訂單判定為取消並無法重新付款，這邊麻煩您直接重新下單即可，也建議在讀取畫面時請勿跳出視窗或是重新整理，以避免付款失敗。謝謝您的支持，後續如有其他問題歡迎留言給我們，謝謝!`, sop: '直接複製貼上給他' }
+    ]
+  },
+  {
+    id: 'promo', name: '優惠', icon: '🎁',
+    items: [
+      { q: '有滿額免運嗎?', a: `黑貓宅急便/超商：單筆訂單運費$100，訂單滿$1500享免運費`, sop: '直接複製貼上給他' },
+      { q: '請問優惠代碼後怎麼使用?在哪輸入?', a: `您好，優惠代碼是在商品加入購物車後訂單結帳，裡面有「使用推薦代碼」，輸入優惠碼(____)，就可以使用了，謝謝!`, sop: '直接複製貼上給他' },
+      { q: '請問新會員註冊如何領取購物金?', a: `您好，完成註冊後$100元購物金會自動匯入您的會員帳號中，不須另外領取，您可以登入後至「會員中心>購物金/點數紀錄」中查看，若有任何異常或無法查詢，歡迎隨時與我們聯繫，我們會協助您確認，謝謝!`, sop: '直接複製貼上給他' }
+    ]
+  },
+  {
+    id: 'order', name: '訂單問題/取消', icon: '📦',
+    items: [
+      { q: '是否需要加入會員才能購物？', a: `非會員也可以在官網購物，不過建議您新會員註冊即可獲得＄100元購物金，之後也能更快速地查詢訂單狀態與聯絡客服喔。`, sop: '直接複製貼上給他' },
+      { q: '下單後預計多久出貨？', situation: '一般訂單/預購訂單', a: `您好，現貨商品下單後預計2~3個工作天內出貨，出貨後約2~3天時間內可抵達取件門市(收件地址)；如您有購買預購商品，則依照預購公告時間為主。`, sop: '直接複製貼上給他' },
+      { q: '熱銷產品暫時缺貨怎麼回覆？', situation: '熱銷產品缺貨', a: `您好，因產品熱銷暫時缺貨，最快於(日期)依照訂單順序出貨。若商品提前到貨，我們也會盡快為您安排出貨，謝謝您的耐心等候。`, sop: '直接複製貼上給他' },
+      { q: '請問商品大概多久會到?', situation: '7-11出貨', a: `您好，已為您安排訂單出貨，由於系統跳轉會有些許誤差，最新貨況歡迎使用7-11貨態查詢進行，包裹查詢號碼：_____
+查詢網址：https://eservice.7-11.com.tw/E-Tracking/search.aspx
+謝謝您！`, sop: '' },
+      { q: '請問商品大概多久會到?', situation: '黑貓出貨', a: `您好，已為您安排訂單出貨，由於系統跳轉會有些許誤差，最新貨況歡迎使用黑貓貨態查詢進行，送貨編號：_____
+查詢網址：https://www.t-cat.com.tw/inquire/trace.aspx
+再請幫忙注意宅急便電話連絡，謝謝您！`, sop: '' },
+      { q: '請問可以寄港、澳嗎?', situation: '寄港、澳', a: `目前暫無此服務`, sop: '' },
+      { q: '請問可以幫我取消訂單嗎?', situation: '訂單尚未出貨', a: `您好，麻煩提供訂單號碼，這邊能協助您取消訂單。
+但如果訂單已出貨的話，故無法取消，不好意思。`, sop: '如果客人想取消訂單的話，請直接複製給他並提供訂單號碼。待客人提供訂單號碼後，請直接把訂單號碼貼給負責人minnie，請minnie協助取消訂單。' },
+      { q: '請問可以幫我取消訂單嗎?', situation: '訂單已出貨，無法取消', a: `宅配：
+您好，目前您的訂單已完成出貨作業，無法直接取消。建議您在收到商品後，依照我們的退貨流程辦理退貨手續，我們會協助您退貨處理，謝謝!
+
+7-11：
+若超商尚未取貨，您可以選擇不取貨，待商品自動退回後，我們會再確認商品無誤後為您取消訂單或辦理退款。`, sop: '如果負責人minnie說該筆訂單已出貨無法取消時，請對照該筆訂單的物流方式複製貼上回答給客人。' },
+      { q: '請問可以更改訂單的收件地址/收貨方式', a: `（未出貨，可更改）
+您好，感謝您的訂購，我們可以協助為您更改！請提供以下資料傳送給我們的客服人員，我們將盡快為您確認與處理:
+1. 訂單編號：
+2. 原本收件地址：
+3. 新的收件地址或您想更改的配送方式：
+
+（已出貨，不可更改）
+您好，感謝您的訂購，由於您的訂單已出貨，故無法更改不好意思。如後續需更改，可等商品退回後立即幫您更改寄出～`, sop: '如果客人想修改收件資訊：1.先請客人傳訂單號碼 2.收到客人回傳的訂單號碼後給minnie，確認他的訂單是否已出貨 3.確認完畢後，請依照訂單狀況複製內容貼上給他。' },
+      { q: '我的名字留錯了沒有相對應的證件，請問有別的方式可以領貨嗎?', situation: '收件人資料有誤，不能領貨', a: `您好，可以下載7-11的OPENPOINT，打開最下面的服務，找到寄件，再打開我的包裹，點選取件查詢中的待取件，最後點選0元取件認證碼給店員掃描就可以了!`, sop: '直接複製貼上給他' }
+    ]
+  },
+  {
+    id: 'return', name: '客訴/退貨/退款', icon: '↩️',
+    items: [
+      { q: '可以退換貨嗎？', situation: '可不可以退、換貨', a: `一、
+退貨商品為非人為瑕疵所造成的污損、故障，消保法保障７天鑑賞期，僅供您猶豫並確認商品是否符合您的需求，並非商品的試用期；如需進行退換貨，請保留完整的原始包裝（含外包裝紙盒），否則恕不接受退換貨。
+
+以下情況無法接受退換貨：
+1. 超過７天的商品鑑賞期。
+2. 商品已拆封使用，或因人為因素而產生的破壞，如：污損、故障、損毀、磨損、擦傷、刮傷、髒污。
+3. 退貨商品包裝破損不完整，或發票、配件不齊者。
+4. 惡意或大量退貨。
+
+確認以上沒問題後，請提供商品照，供我們確認謝謝。
+
+二、（確認無誤後，請傳這段給他）
+您好，請提供以下資料，我們會安排物流去跟您收退貨商品，麻煩請您把退貨商品裝好，以防碰撞。
+訂單號碼：
+姓名：
+電話：
+取件地址：
+備註：`, sop: '如果客人問可不可以退貨，請先詢問原因，再複製左方一的回答給他，都確認無誤後，請複製左方二的回答給他。待客人回覆完畢，請將訂單編號以及取件資料傳給米妮，請他安排黑貓去收退貨商品。' },
+      { q: '如何退貨？', situation: '要怎麼退貨', a: `請您登入商店會員後，前往【會員中心】>【訂單】，找到該筆訂單並點選【查閱】。
+再將頁面滑到最下方，點選【申請退貨】，勾選欲退貨的商品，填寫退貨數量、原因、方式及退款資訊後，點選【提交退貨申請】即可，我們收到退貨後會進行審核。
+申請後，麻煩請提供退貨的訂單號碼謝謝。
+也可直接聯絡客服人員告知退換貨需求，與客服人員了解細節，確認是否可退換貨。`, sop: '如果客人問怎麼退貨，請直接複製貼上。客人回傳訂單號碼後，請跟minnie說一聲。' },
+      { q: '請問已開封的商品是否可以退貨?', a: `(先詢問客人退貨原因)
+您好，感謝您的回覆。如需辦理退貨請至會員專區申請退貨並填寫退貨原因後提交，即可開始跑退貨流程，若有操作上的疑問，也歡迎隨時與我們聯繫，謝謝您!`, sop: '直接複製貼上' },
+      { q: '產品瑕疵客訴', situation: '產品瑕疵', a: `您好，非常抱歉造成您的困擾。為了儘速為您處理換貨，請協助提供以下資訊：
+訂單號碼：
+商品批號：（位於包裝底部或側面，以便我們與廠商反應）
+收件資訊：
+姓名：
+電話：
+地址：
+備註：
+【換貨流程說明】我們將安排物流前往為您更換新品。請您先將原瑕疵商品使用箱子妥善包裝以防碰撞，並於物流抵達時，主動將瑕疵品交給司機收回即可。
+感謝您的體諒與配合！`, sop: '先請他提供產品瑕疵照。若遇到產品瑕疵客訴，可提供退換貨／退貨退款處理，若客人明確表示不用退換貨，則補100元的購物金。若客人投訴瑕疵品要換貨，請直接複製貼上給他，待客人回傳後：1.商品批號請傳給minnie，請他傳給品牌經理 2.請把收件資訊給minnie，請他安排物流人員去跟他收瑕疵品，並把瑕疵品寄到公司（圓山）給品牌經理。' },
+      { q: '產品有漏寄，可以補寄嗎?', situation: '產品遺漏，需補寄', a: `您好，很抱歉造成您的困擾，經查詢因作業疏失，造成您少收到產品，我們會盡快補寄給您，謝謝!
+麻煩你提供以下收件資料謝謝您～
+姓名：
+電話：
+收件地址/門市：
+備註：`, sop: '如果客人沒先傳照片的話，請先請他提供開箱照片or影片。經確認無誤後，請直接複製貼上左方回答給他，待客人回傳資料後，請傳給minnie，請他安排補寄。' },
+      { q: '有甚麼退款方式?', a: `信用卡付款：
+確認退貨成功後，會直接將款項刷退至原付款的信用卡帳號中。
+
+Line pay付款：
+確認退貨成功後，會直接以Line pay的原方式退款給您。
+
+貨到付款：
+確認退貨成功後，將退款費用轉帳至您提供的銀行帳戶中。`, sop: '可先向minnie確認客人付款方式' },
+      { q: '退款處理時間要多久?', a: `您好，退款作業已受理，預計7-10個工作天(不含假日)退款，很抱歉造成您的不便，感謝您的耐心等候!`, sop: '直接複製貼上' }
+    ]
+  },
+  {
+    id: 'pickup', name: '無法取件', icon: '📮',
+    items: [
+      { q: '姓名不是本人/本名無法取貨怎麼辦？', a: `您好，您只要下載7-11的OPENPOINT，打開最下面的「服務」，找到「寄件」，再打開「我的包裹」，點選「取件查詢」中的「待取件」，最後點選「0元取件認證碼」給店員掃瞄就可以不用出示身分證領取包裹唷!`, sop: '直接複製貼上' }
+    ]
+  },
+  {
+    id: 'notice', name: '沒收到貨到通知', icon: '🔔',
+    items: [
+      { q: '為什麼我沒收到貨到通知？', a: `您好，
+如果您在下單前有加入我們的line會員，line會有貨態通知。
+如果沒加入line好友，會以電子郵件的方式通知您～
+如果您當初有加入官網會員，登入會員也可以看到您的訂單狀態。
+如果您有開企業阻攔的話，也會收不到喔，再請你注意一下謝謝。`, sop: '直接複製貼上' }
+    ]
+  },
+  {
+    id: 'referral', name: '會員推薦', icon: '👥',
+    items: [
+      { q: '好友推薦是可以累積的嗎？', a: `會員推薦獎賞是可以累積的！每位會員都有一組專屬的推薦連結，可以持續推薦不同的新朋友註冊。`, sop: '直接複製貼上' },
+      { q: '怎麼領取line的購物金呢', a: `您好，官方line下方選單有個領取50$購物金的地方喔～`, sop: '直接複製貼上' }
+    ]
+  },
+  {
+    id: 'buy', name: '哪裡可以購買', icon: '🛒',
+    items: [
+      { q: '請問要在哪裡購買？', a: `您好，我們提供購買的渠道有官網、蝦皮跟momo，以下附連結給您謝謝～
+
+官網：https://www.trusteebio.com.tw/
+
+蝦皮：https://shopee.tw/trustee_tw?categoryId=100630&entryPoint=ShopByPDP&itemId=26936792342
+
+momo：https://www.momoshop.com.tw/TP/TP0006611/main?entpCode=TP0006611`, sop: '' }
+    ]
+  },
+  {
+    id: 'partner', name: '合作', icon: '🤝',
+    items: [
+      { q: '想跟你們合作', situation: '想邀約合作', a: `您好，如果想詢問合作事宜的可以請您寄信到這個信箱~我們再轉信給負責人！謝謝
+lana@trusteebio.com`, sop: '' },
+      { q: '經銷/批發合作洽詢', situation: '經銷/批發 合作', a: `您好，合作請發信至：
+niki@trusteebio.com
+kiki@trusteebio.com
+謝謝您喜歡我們的產品😊`, sop: '' }
+    ]
+  },
+  {
+    id: 'internal', name: '信賴常見問題（內部SOP）', icon: '🏢',
+    items: [
+      { q: '申請延後出貨（蝦皮/官網）', a: `客服回覆方式：
+蝦皮訂單：無法申請延後出貨，請依蝦皮平台規定之出貨期限完成出貨。
+官網訂單：是否可以延後出貨，需先與負責人「米妮」確認後，再回覆客人。
+
+注意事項：
+官網訂單在尚未確認前，請勿直接向客人承諾可以延後出貨。`, sop: '' },
+      { q: '申請改顏色（品牌：23YEARSOLD）', a: `適用通路：官網／蝦皮／MO店+
+
+若訂單尚未出貨，可協助客人取消/取訂原訂單，並請客人重新下單所需顏色。
+
+客服處理方式：
+1. 先確認訂單目前尚未出貨。
+2. 協助客人處理原訂單。
+3. 請客人重新下單想要的顏色。
+
+注意事項：
+・請勿直接修改原訂單顏色，需由客人重新下單。
+・若訂單已出貨，則無法依此方式協助更換顏色。`, sop: '' },
+      { q: '修改訂單：沒用到購物金、換商品', a: `若訂單尚未出貨，可協助客人取消原訂單，再請客人重新下單。
+
+客服處理方式：
+1. 先確認訂單目前尚未出貨。
+2. 協助客人取消原訂單。
+3. 請客人重新下單正確的商品，並確認購物金使用情況。
+
+注意事項：
+・原訂單無法直接修改商品或補使用購物金。
+・請先確認訂單尚未出貨，再協助客人處理取消及重新下單。`, sop: '' },
+      { q: '詢問指定賣場指定商品是否會補貨、補貨時間', a: `客服處理方式：
+1. 若客人詢問指定賣場的商品是否會補貨，請先確認其他賣場是否有現貨。
+2. 若其他賣場有貨，請優先引導客人至有貨的賣場購買。
+3. 若各賣場皆無庫存，請告知客人目前暫無法提供確切的補貨時間，並引導客人關注我們的LINE。
+4. 後續若有補貨或相關資訊，會透過LINE進行通知。
+
+注意事項：
+・請勿自行向客人承諾確切的補貨日期或時間。
+・若其他賣場有現貨，請優先協助客人至有貨賣場購買。`, sop: '' },
+      { q: '沒有收到超商取貨簡訊通知', a: `若客人反映沒有收到超商取貨簡訊，可能是手機設定阻擋陌生或外來簡訊，導致無法正常收到通知。
+
+客服處理方式：
+1. 請客人先確認手機是否有開啟「阻擋陌生簡訊/垃圾簡訊」等功能。
+2. 若有設定阻擋，請客人先關閉相關阻擋設定，以利後續正常接收簡訊通知。
+3. 同時可請客人確認手機是否有其他簡訊過濾或封鎖功能。
+
+注意事項：
+若客人仍未收到簡訊，請先協助確認訂單的取貨門市及包裹狀態，再進一步協助處理。`, sop: '' },
+      { q: '客人需要取消，再重新訂購（訂單狀態要更新）', a: `若客人希望取消原訂單後重新訂購，請先確認目前訂單狀態。
+
+客服處理方式：
+1. 請先向負責人「米妮」確認目前訂單狀態。
+2. 若訂單已出貨：無法協助取消訂單，請告知客人無法取消。
+3. 若訂單尚未出貨：可協助處理取消訂單，待取消完成後，再請客人重新下單。
+
+注意事項：
+請務必先確認訂單狀態，再回覆客人是否可以取消；未經確認前，請勿直接向客人承諾可以取消訂單。`, sop: '' }
+    ]
+  },
+  {
+    id: 'member', name: '會員權益相關QA', icon: '🎫',
+    items: [
+      { q: '詢問哪裡有活動', a: `（內部處理提示，非直接回覆客人的話術，請依情況彈性回覆客人目前活動資訊）`, sop: `負責人米妮找Emily、Wendy看他們想把人流引導到哪裡，舉例：
+[單支] SMIB：momo　23/healic/AL：shopee　LAGOM：酷澎
+[官網有組合檔次時] 引導官網買多件組優惠` },
+      { q: '詢問「下一次」折扣，甚至直接問下一次團購檔期', a: `引導為鼓勵當下購買，舉例：
+各通路活動都在準備中，目前不確定上線期間，歡迎參考蝦皮週三/週六活動日，並開啟LINE通知，第一時間可以收到活動優惠。`, sop: '' }
+    ]
+  }
+];
+
+/* 品牌別 QA（依品牌分頁）*/
+const BRAND_CATEGORIES = [
+  {
+    id: '23yo', name: '23YEARSOLD', icon: '💄',
+    items: [
+      { q: '怎麼選適合自己的色號', a: `親愛的顧客您好，感謝您對 23yearsold 氣墊/遮瑕產品的關注！
+選擇最適合您的色號其實很簡單，主要參考以下兩個關鍵點：
+
+1. 判斷您的膚色基調 (Undertone)
+・冷色調 (Cool)：血管偏藍紫色，適合帶有粉色調 (Pink/Rose) 的色號，能讓氣色更紅潤。
+・暖色調 (Warm)：血管偏橄欖綠色，適合帶有黃色調 (Yellow/Golden) 的色號，能中和泛紅，使妝容更自然。
+・中性調 (Neutral)：血管顏色介於兩者之間，大部分色號都能適用。
+
+2. 決定您想要的妝效
+・追求自然：選擇與您頸部膚色最接近的色號，可達到完美融合的效果。
+・追求提亮：選擇比您膚色白半階到一階的色號，能讓臉部看起來更透亮有精神。
+
+小提醒：遮瑕膏的色號建議比粉底液深半階來遮蓋痘印或瑕疵；若用於眼下提亮，則可選淺半階。`, sop: '' },
+      { q: '用完氣墊之後要上蜜粉嗎', a: `親愛的顧客您好！很高興為您解答關於 23yearsold 氣墊的使用疑問。
+使用完氣墊後是否需要上蜜粉，主要取決於您的膚質、當天的天氣以及您想要的妝感。
+
+・油性或混合性肌膚：建議使用蜜粉，可吸附多餘油脂、控油定妝，避免氣墊的保濕成分過快脫妝。
+・乾性或中性肌膚：可省略蜜粉步驟，保留氣墊的光澤與水潤感；擔心局部黏膩可僅在T字部位輕掃少量蜜粉。
+・追求持久或霧面妝感：建議使用蜜粉，能形成防護層，讓妝容更持久、更抗摩擦，並將光澤感轉換為精緻霧面或柔焦妝效。`, sop: '' },
+      { q: '黑眼圈有點紅紅紫紫的，建議用哪個色號遮黑眼圈呢？', a: `親愛的顧客您好，感謝您的諮詢！
+根據您的描述，黑眼圈呈現紅紫色調是相當常見的血液循環不佳型黑眼圈。
+針對這種帶有紅色和紫色混合的色調，我們的專業建議是使用「2N」這個色號。`, sop: '' },
+      { q: '打亮澎潤選什麼色號呢', a: `親愛的顧客您好，感謝您的詢問！
+若您是想利用 23yearsold 的遮瑕產品來達到打亮和蘋果肌澎潤的效果，我們的原則是選擇比您自身膚色亮一階到兩階的色號。
+根據我們的產品線和多數顧客的使用經驗，我們推薦「0.2P」這個色號。`, sop: '' },
+      { q: '請問要怎麼把痣遮起來呢？', a: `1. 取微量氣墊，輕拍全臉薄薄一層。
+2. 使用您的 23 years old 遮瑕膏，用極細的遮瑕刷或尖頭棉花棒，沾取少量遮瑕膏。
+3. 點按在痣的中心點，不要塗抹開，將遮瑕膏「壓」在痣的表面。
+4. 用手指輕輕拍打邊緣，讓遮瑕膏與周圍膚色融合，但不要移動到痣上的遮瑕層。`, sop: '' },
+      { q: '請問23YEARSOLD的遮瑕膏有含香精、酒精嗎?', a: `不含香精，也不包含刺激性的酒精。`, sop: '' },
+      { q: '23YEARSOLD的遮瑕膏有成膜劑嗎?', a: `有成膜劑。`, sop: '' },
+      { q: '請問產品是全素嗎', a: `遮瑕膏、氣墊、蜜粉成分皆為全素產品。`, sop: '' }
+    ]
+  },
+  {
+    id: 'lagom', name: 'LAGOM', icon: '🌾',
+    items: [
+      { q: '請問我使用後臉很乾還起屑怎麼辦', a: `您好，我們目前尚未收到類似的反映，不好意思，我們會反映給總公司，謝謝您的回饋。`, sop: '' },
+      { q: '早安保濕潔顏水凝露是乾手、乾臉上嗎？', a: `您好，是的～這款的質地以乾手搓揉開來就會化成水，可不沾水直接乾臉洗唷！`, sop: '' },
+      { q: '早安保濕凝膠水凝露是只有早上可以用嗎？', a: `關於這款保濕凝膠，其實不限於早上使用喔！它的質地設計是為了溫和洗掉夜間累積的髒污，還可以保濕，後續上妝更服貼～但晚上清潔後使用，同樣能幫肌膚鎖水修護。若夜晚肌膚較乾燥，也推薦可以稍微厚敷加強保濕喔！`, sop: '' },
+      { q: '早晚都要洗臉，推薦哪一款呢?', a: `您好，這兩款洗面乳的設計是互相搭配的喔：
+
+早安水凝露：是無泡沫的溫和質地，專門用在早上起床，幫您帶走整夜分泌的油脂，同時留住水分，讓後續化妝更貼妝！
+
+晚安潔顏乳：有豐富的泡沫，負責深層清潔，幫您洗掉白天在外面接觸的髒空氣、防曬或殘留彩妝。
+
+如果您早晚都有洗臉習慣，非常推薦早晚分開使用，給皮膚最剛好的清潔度喔！`, sop: '' },
+      { q: '懷孕期間可以使用嗎？', a: `LAGOM早安妝前洗面乳通過肌膚低刺激認證，成分與使用感上都是比較溫和的潔顏產品，不過由於懷孕期間體內荷爾蒙變化，肌膚狀態可能會變得比較敏感，且每位媽咪的膚質狀況因人而異，建議初次使用前先進行局部肌膚測試，或先諮詢專業醫師的意見。`, sop: '' },
+      { q: '三款潔顏產品的差異', a: `提供給您各款潔顏產品說明參考喔~
+
+早安保濕潔顏水凝露：是無泡沫的溫和質地，專門用在早上起床，幫您帶走整夜分泌的油脂，同時留住水分，讓後續化妝更貼妝！
+
+晚安極密泡沫潔顏乳：有豐富的泡沫，負責深層清潔，幫您洗掉白天在外面接觸的髒空氣、防曬或殘留彩妝
+
+敏感肌 PH新平衡修護潔顏乳：清潔同時舒緩肌膚壓力，適合敏感肌及痘痘肌夜間使用`, sop: '' }
+    ]
+  },
+  {
+    id: 'healic', name: 'HEALIC', icon: '🌿',
+    items: [
+      { q: '請問HEALIC的產品孕婦可以使用嗎?', a: `皙麗可的產品通過德國德瑪低刺激的測驗，美白系列產品適合孕媽咪、醫美術後及敏感肌膚使用，成分溫和，孕期也能安心保養。
+不過目前防曬產品沒有特別通過針對孕婦使用的檢測，因此如有特殊需求，建議可先諮詢醫師評估再使用喔！`, sop: '' },
+      { q: '請問臉上有顆粒感痘痘也可以使用HEALIC的產品嗎?如果有正在發炎的痘痘可以使用嗎?', a: `您好，皙麗可的產品皆通過德國德瑪低刺激的測驗，全品項都是孕婦媽咪/醫美術後/敏感肌可以安心使用的產品，適合各膚質使用。不過，如果是發炎中的痘痘較為嚴重或有紅腫疼痛的情況，我們還是會比較建議您先諮詢皮膚科醫師的專業建議，以確保肌膚能得到適合的照顧與治療。
+
+可以待肌膚紅腫發炎緩解後，在針對臉上有顆粒感的，使用皙麗可棉片做清潔，去除多餘的老廢角質，並針對痘痘留下的色素痘印部分，搭配精華液與爆水面霜加強美白(淡斑)效果，打造亮白肌膚!!`, sop: '' },
+      { q: '請問棉片可以每天使用嗎? 搭配精華、面霜該怎麼使用?', a: `您好，棉片可以每天早晚使用，可以膚況選擇擦拭或濕敷，使用棉片後，可再使用精華與爆水面霜，謝謝。`, sop: '' },
+      { q: '棉片可以敷幾分鐘?', a: `棉片一般建議可以濕敷5-10分鐘`, sop: '' },
+      { q: '請問水潤亮白爆水面霜早上也可以使用嗎?會不會反黑?', a: `此產品添加韓國第五代美白專利成分，核心成分為傳明酸，無反黑效果，不限早晚24小時無負擔使用。`, sop: '' },
+      { q: '水潤亮白爽膚棉使用後可以再敷美白保濕面膜嗎？', a: `先用爽膚棉擦拭，除去多餘的老廢角質，後續再敷美白保濕面膜是可以的唷!`, sop: '' },
+      { q: '請問防曬是物理性防曬還是化學性防曬?', a: `HEALIC的防曬屬於化學性防曬`, sop: '' },
+      { q: 'Healic醫美術後可以用嗎？', a: `您好～
+HEALIC的產品是低刺激產品，有經過德國德瑪認證，醫美術後跟敏弱肌是可以使用的，但因為醫美種類多樣且因個人體質會有些許差異，加上我們也不清楚您的傷口狀況，因此我們還是建議詢問專業醫師意見，或是術後第二天先局部測試過後沒問題再做使用～`, sop: '' },
+      { q: 'HEALIC防曬打開使用都會油水分離，先流出很多油是正常的嗎', a: `您好，謝謝您的反饋。
+HEALIC防曬乳因添加高比例保濕成分，使用時可能出現油水分離的情況，屬於正常現象，並不影響產品品質與防曬效果。
+建議使用前輕輕搖勻產品，或擠出後稍做混合，即可恢復均勻質地，安心使用！謝謝！`, sop: '' },
+      { q: '請問HEALIC2款防曬乳有香味嗎?', a: `您好~2款防曬霜含有香料,香料是天然來源的香葉天竺葵油（Geranium Oil）喔!`, sop: '' },
+      { q: '請問HEALIC全產品有含酒精嗎?', a: `都沒有含酒精喔~`, sop: '' },
+      { q: '請問HEALIC防曬乳，有PDRN的成分，是植物性或動物性？', a: `是動物性PDRN`, sop: '' }
+    ]
+  },
+  {
+    id: 'al', name: "Angel's Liquid", icon: '💧',
+    items: [
+      { q: `請問Angel's liquid的產品孕婦可以使用嗎?`, a: `雖然有經過低刺激性測試，但韓國並未特別針對孕婦族群做過安全性驗證。由於孕婦肌膚較敏感，會建議先諮詢專業醫師或是先在局部做測試後再評估。
+
+Angel's Liquid 全系列產品皆通過『皮膚低刺激測試』，對多數肌膚類型皆非常溫和。不過，我們仍建議孕期使用者諮詢專業醫師意見，主要基於以下兩點考量：
+
+・測試範疇不同：皮膚低刺激測試主要針對表皮的過敏反應；而孕期安全性屬於獨立的特殊生理狀態，目前韓國官方並無針對『孕婦專用』的特定臨床實驗數據。
+・個體體質差異：懷孕期間受荷爾蒙波動影響，體質與肌膚耐受度可能產生劇烈變化，這與產品本身的溫和度是分開看的！
+
+雖然產品不含常見的孕期禁用藥物成分，但為求最高標準的嚴謹與安全，我們建議孕媽咪們在使用前，先諮詢產檢醫師。`, sop: '' },
+      { q: `請問臉上有顆粒感痘痘也可以使用Angel's liquid的產品嗎?如果有正在發炎的痘痘可以使用嗎?`, a: `產品中未含有任何會誘發痘痘生長的成分，任何肌膚都可以安心使用。不過，如果是發炎中的痘痘較為嚴重或有紅腫疼痛的情況，我們還是會比較建議您先諮詢皮膚科醫師的專業建議，以確保肌膚能得到適合的照顧與治療。`, sop: '' },
+      { q: '請問產品為什麼臭味較濃烈，原因是什麼？', a: `本產品特別添加韓國最高濃度的穀胱甘肽，因為高純度原料本身會帶有些許天然氣味。品牌堅持不過量添加香精掩蓋，保留成分真實、最有效的狀態，讓您能安心享受高效保養。`, sop: '' },
+      { q: '想詢問此商品適用微針美容儀操作嗎', a: `親愛的顧客您好，感謝您的詢問！😊 關於您提到 Angel's Liquid 的商品是否適用於微針美容儀操作，我們的答案是：✅ 絕對可以！並且，我們非常推薦將我們的產品搭配微針美容儀使用，因為這樣做可以讓產品的功效加乘放大，效果會更好！`, sop: '' },
+      { q: '請問產品寶寶不小心碰到有關係嗎?怕擦完吸收後抱著寶寶多多少少會沾到一點', a: `Angel's Liquid 全產品通過低刺激測試，但該測試是以『成年人肌膚』為標準。事實上，嬰幼兒的皮膚屏障比成年人薄約二分之一，任何成年人使用的保養品，對嬰幼兒來說濃度可能都過高。因此建議：
+
+1. 避免直接塗抹到：雖然成分溫和，但是給成年人的任何保養品都不建議幼兒直接觸碰。
+2. 日常接觸無虞：媽咪保養後的日常抱抱、親吻通常沒有大礙。但為了給寶寶最嚴謹的保護，我們會建議在塗抹任何保養品後，約等待 5-10 分鐘，待成分完全被皮膚吸收乾爽後，再與孩子進行親密互動，這樣最為安全喔！`, sop: '' },
+      { q: '酒糟肌也可以用嗎?', a: `Angel's Liquid 全系列產品皆通過皮膚低刺激測試，主打無酒精、溫和配方，旨在穩定肌膚屏障，讓敏弱肌也能安心提亮。
+
+但是由於酒糟肌的皮膚受器較為敏感，在使用高活性、高濃度成分時，仍需要留意，本系列產品含高濃度菸鹼醯胺以修復屏障，但對部分極度脆弱的酒糟肌，初期可能產生短暫的溫熱感或微紅；系列中含有多種植物精華，雖然天然，但對於處於發炎爆發期的酒糟肌，仍可能因活性成分過度滲透而造成刺激。
+
+因酒糟肌情況較為特殊，我們的產品濃度非常高，建議如果您的肌膚正處於紅腫熱痛的發作期，請先暫停任何美白產品，以醫師處方為主；若在穩定期，建議先在耳後或局部測試 3 天，確定皮膚適應後再全臉使用喔！
+
+使用前也建議諮詢醫師！因為濃度比較高加上酒糟肌耐受度比較低的關係真的要多注意！`, sop: '' },
+      { q: '止汗劑流汗的話衣服會有黃污漬嗎?因為我擦某些牌子流汗的話腋下就會留下一塊污漬', a: `我們這款止汗劑不含鋁鹽唷！`, sop: '' },
+      { q: '有含酸類嗎?', a: `這系列的配方非常純粹，主要核心成分為高純度穀胱甘肽 (Glutathione) 與菸鹼醯胺 (維他命 B3)，主打深度亮白、修護與長效保濕，並未添加常見的煥膚酸類（如果酸 AHA、水楊酸 BHA 或 A 酸相關成分），因此質地相對溫和，也通過了韓國嚴格的低刺激測試。
+
+不過，考量到每個人的膚質狀況不同，若近期有安排美容做臉或相關醫美療程，還是建議在使用前先諮詢美容師或醫師，確保產品與做的療程不衝突，才能達到最好的效果喔！也比較安心。`, sop: '' },
+      { q: '去痘痘可以用嗎?', a: `這款產品在定位上，其實是屬於高濃度的亮白與修護精華，並非專門針對痘痘設計的，也沒有酸類成分。
+
+很多顧客回饋痘痘不見了，其實是因為穀胱甘肽是極強的抗氧化劑，能穩定肌膚的發炎反應，紅腫的發炎狀態就更容易平復。另外成分中的5%菸鹼醯胺(維他命B3)、腺苷，對於油脂分泌旺盛導致的粉刺和發炎痘，修復改善效果非常明顯。
+
+當您皮膚的基底環境變好了，痘痘自然就待不住了！這也是為什麼很多有痘痘困擾的顧客，用完後都驚喜地發現皮膚變得很穩定的原因。`, sop: '' },
+      { q: '可以搭配酸類使用嗎', a: `理論上搭配低濃度酸類產品是沒問題的。只要避免同時使用高濃度酸類、高濃度維他命 C，並避免過度去角質，並且間隔5~10分鐘讓皮膚表面的 pH 值稍微恢復再上即可。
+
+由於本產品的菸鹼醯胺濃度較高，建議搭配其他產品時，先靜候 5 分鐘待肌膚吸收，能有效避免成分衝突；若您的肌膚較為敏感，因本產品濃度已經很高，則不建議再搭配中高濃度的酸類產品使用。`, sop: '' }
+    ]
+  },
+  {
+    id: 'trustee', name: 'TRUSTEE', icon: '🏢',
+    items: [
+      { q: '為什麼精華液和乳液濃度相同？有什麼不同？', situation: '修護系列', a: `濃度相同是為了提供一致的活性成分，但精華液質地輕薄，適合用於強化吸收和針對性修護；乳液則含有更多保濕成分，適合補水與鎖水。`, sop: '' },
+      { q: '使用菸鹼醯胺產品後，皮膚有輕微刺感是正常的嗎？', situation: '修護系列', a: `某些人在初次使用菸鹼醯胺時可能會感到輕微刺感，這是正常、而且通常是短暫的。如果持續不適，建議減少使用頻率或諮詢皮膚科醫生。`, sop: '' },
+      { q: '孕婦或哺乳期可以使用這些產品嗎？', situation: '修護系列', a: `菸鹼醯胺是一種溫和且安全的成分，通常適合孕婦使用，但因孕期皮膚較敏感，建議先進行局部測試，並諮詢醫生以確保個人適用性。`, sop: '' },
+      { q: '可以單獨只使用精華液或乳液嗎？', situation: '修護系列', a: `當然可以！如果想針對性改善膚況，建議使用精華液；如注重日常保濕，則可選擇乳液。`, sop: '' },
+      { q: '這兩款產品是否會因時間變質？', situation: '修護系列', a: `配方穩定，正常使用期限內不易變質，但請在開封後3-6個月內用完，以保持最佳效果。`, sop: '' },
+      { q: '菸鹼醯胺精華液和乳液需要避開其他成分嗎？', situation: '修護系列', a: `菸鹼醯胺與大多數成分兼容，但若與高濃度維他命C（例如20%）同時使用，有可能產生輕微刺激，建議錯開使用。`, sop: '' },
+      { q: '系列是否為全素？', situation: '修護系列', a: `是的，品牌全系列產品皆為純素，可安心使用。`, sop: '' },
+      { q: '精華液跟乳液成分類似，為什麼要先使用精華液再使用乳液？', situation: '修護系列', a: `乳液的質地設計更保濕鎖水，主成分都是菸鹼醯胺，所以如果想加強保濕、延續修護舒緩效果，擦完精華液後接續擦乳液，可完整達到修護及保濕、鎖水效果。`, sop: '' },
+      { q: '擦完精華再擦乳液之後，臉上呈現白色粉末痕跡，是正常的嗎？', situation: '修護系列', a: `您好，我們有接收到少數人使用會這樣，反應給工廠後得到回覆是精華跟乳液濃度都是10%高濃度，少數人肌膚吸收程度不同，會需要兩支產品間隔較長時間，或是後續擦乳液時，不需全臉擦拭，只需要手心擠一點、雙手抹開後按壓在臉上即可。`, sop: '' },
+      { q: '10%菸鹼醯胺修護解方精華乳和10%菸鹼醯胺修護解方精華,請問這兩個有含酒精嗎?', situation: '修護系列', a: `您好~都不含酒精喔~`, sop: '' },
+      { q: '請問trustee全系列產品有做動物實驗嗎?', situation: '修護系列', a: `都沒有做動物實驗唷!`, sop: '' },
+      { q: '每天都可以使用這個套組嗎？', situation: '抗痘系列', a: `初次使用者建議從每週2-3次開始，待皮膚適應後可逐漸增加至每天使用。`, sop: '' },
+      { q: '白天可以使用嗎？', situation: '抗痘系列', a: `白天不建議使用5%杏仁酸精華液，避免因肌膚較敏感的關係造成不適；但可以單獨使用5%菸鹼醯胺乳液達到保濕效果，並搭配有效防曬。`, sop: '' },
+      { q: '敏感肌膚想改善痘痘，可以使用嗎？', situation: '抗痘系列', a: `敏感肌可從較低頻率開始使用，並進行局部測試；若無刺激反應，則可逐步增加使用頻率。`, sop: '' },
+      { q: '孕婦可以使用嗎？', situation: '抗痘系列', a: `5%菸鹼醯胺乳液對孕婦安全，但建議孕婦在使用5%杏仁酸精華液前諮詢醫生。`, sop: '' },
+      { q: '這個套組需要冷藏保存嗎？', situation: '抗痘系列', a: `不建議冷藏，因為低溫可能會改變活性成分的穩定性，降低效果；此外，溫度變化會影響產品質地。最佳儲存方式是放在陰涼乾燥處，避免陽光直射。`, sop: '' },
+      { q: '套組可以和其他產品一起使用嗎？', situation: '抗痘系列', a: `可以，但建議避免與高濃度酸類或維他命C產品同時使用，以減少皮膚刺激；建議油性肌膚、敏感性肌膚盡量減少護膚步驟，為肌膚減輕負擔。`, sop: '' },
+      { q: '系列是否為全素？', situation: '抗痘系列', a: `是的，品牌全系列產品皆為純素，可安心使用。`, sop: '' },
+      { q: '擦完精華再擦乳液，結果臉上都有屑屑，要怎麼改善？', situation: '抗痘系列', a: `您好，我們有接收到少數人使用會這樣，少數人肌膚吸收程度不同，會需要兩支產品間隔較長時間，或是後續擦乳液時，不需全臉擦拭，只需要手心擠一點、雙手抹開後按壓在臉上即可。`, sop: '' },
+      { q: '請問超能C20%煥白解方精華，顏色變深是正常的嗎?', situation: '煥白系列', a: `您好，因我們的維他命C是高濃度精華，且盡量不添加容易過敏的化合物、溶劑，所以顏色上會隨著時間出產後漸漸變深，產品資訊的照片因為是生產後馬上拍攝，所以您收到後顏色上的變化是正常的；我們的產品盒裝、瓶身上皆有開罐符號6個月，原廠製造建議以「開封後」計算6個月內使用完畢，避免維他命C效果不如預期，所以您可以不用擔心。`, sop: '' },
+      { q: '如果產品顏色變深了，還能使用嗎？', situation: '煥白系列', a: `如果產品顏色變成深橘色或褐色，是純維他命C的正常特性，建議在開封後的三個月內使用完畢；產品開封六個月以後如未使用完，建議使用新品。`, sop: '' },
+      { q: '請問如果想美白跟保濕的話，煥白的修護精華可以一起使用嗎?', situation: '煥白系列', a: `若您想要美白跟保濕功能兼顧的話，建議可以美白精華+修護乳液，修護乳液是六支產品保濕效果最好。`, sop: '' },
+      { q: '為什麼乳液的維他命C濃度比較低？', situation: '煥白系列', a: `乳液的設計是為了日常舒適保濕，同時帶來溫和的抗氧化功效，避免過高濃度可能引起的刺激感，適合搭配精華液使用。`, sop: '' },
+      { q: '什麼時候使用效果最好？', situation: '煥白系列', a: `建議早上或晚上清潔後使用。早上使用時，請記得搭配防曬產品以保護皮膚。`, sop: '' },
+      { q: '產品需要冷藏保存嗎？', situation: '煥白系列', a: `不需要，但建議存放於陰涼乾燥處，避免陽光直射，以維持維他命C的穩定性。`, sop: '' },
+      { q: '20%純維他命C精華液適合每天使用嗎？', situation: '煥白系列', a: `如果是第一次接觸高濃度維他命C產品，建議從每週2-3次開始，待皮膚適應後可逐漸增加至每天使用；但如果皮膚感到乾燥或刺激，建議減少使用頻率。`, sop: '' },
+      { q: '20%純維他命C精華液中含有酒精，會對皮膚造成影響嗎？', situation: '煥白系列', a: `精華液中的酒精主要用於幫助成分滲透，提升產品吸收效果，並增加清爽感。配方中添加的酒精濃度經過調配，確保在大多數情況下對肌膚安全；然而，如果您的皮膚對酒精特別敏感，建議在使用前進行局部測試，確認無不適反應後再使用。`, sop: '' },
+      { q: '系列是否為全素？', situation: '煥白系列', a: `是的，品牌全系列產品皆為純素，可安心使用。`, sop: '' }
+    ]
+  },
+  {
+    id: 'smib', name: 'SMIB', icon: '✨',
+    items: [
+      { q: '染色維持與效果？', situation: '染色洗髮精', a: `您好，一般來說染色效果依個人使用方式、時長與髮質有些許差異。在頭髮上停留5~10分鐘，染色大約可以維持2至4週；達到理想髮色後，可降低使用頻率，但不可天天使用唷，可以改為需補色時每週使用1-2次，或者與一般洗髮精交替使用，以維持顏色不褪去。`, sop: '' },
+      { q: '濕髮還是乾髮使用/上不了色怎麼辦', situation: '染色洗髮精', a: `您好，感謝您的提問！關於濕髮上色效果不佳，我們建議您可以先嘗試『乾髮使用』的方式：由於每個人的髮質粗細、受損程度以及白髮量都不同，這些因素會影響色素附著的效果。
+
+SMIB 染色洗髮精與市面上的傳統染髮劑是完全不同的，我們不是使用傳統染髮劑中刺激性高的化學成分（如 PPD）來打開毛鱗片並將色素強行滲入髮芯。我們的上色原理主要利用天然、溫和的植物性色素，搭配獨家的專利鉑金技術，在洗髮的過程中，讓色素以更細微、溫和的方式附著在髮絲的表層。
+
+因此，建議您可以先嘗試乾髮時使用：直接將洗髮精像染髮劑一樣塗抹在白髮較多的部位，並停留約 5~10 分鐘（第一次使用可停留久一點），再加水起泡沖洗。這樣可以讓色素在髮絲上停留更長時間，有效提高上色的飽和度與效果。`, sop: '' },
+      { q: '染色洗髮精能染一般頭髮嗎（非白髮）', situation: '染色洗髮精', a: `您好～可以染一般頭髮，但是就是當成補色洗髮精。
+但是如果之後要去髮廊染頭髮的話需要暫停洗一陣子，這款是會慢慢掉色因為不是傳統染劑，會不會卡色要看個人髮質或是要諮詢專業美髮師。`, sop: '' },
+      { q: '請問如果是偏乾燥的易癢過敏頭皮也適合嗎？', situation: '染色洗髮精', a: `這款 SMIB 洗髮精在韓國市場上，其實就是針對調理頭皮環境、維持頭皮健康這個方向去研發的喔（跟您提出的需求是很相符的！）
+我們韓國團隊是基於專業的頭皮護理理念進行研發，目前許多有頭皮相關困擾的顧客，使用後都給予了很不錯的反饋呢！
+綜合產品的研發定位和顧客的真實回饋，這款洗護組非常適合注重頭皮健康、想改善頭皮困擾的族群！很推薦您可以給它一個嘗試的機會喔～`, sop: '' },
+      { q: 'SMIB可以染鬢角、鬍子、眉毛之類的部位嗎？', situation: '染色洗髮精', a: `可以染色在鬢角、鬍子、眉毛的部分~
+1. 不過需要注意不要用到眼睛，一定會痛
+2. 其他肌膚部位是不會有染色現象，只須注意手指甲可能會有，因為指甲由蛋白質組成與頭髮的成分相近，較易染色。建議有碰到手部盡快沖洗掉即可
+3. 以原廠的數據來看，引發問題肌膚的機率不到2%。他們觀察這2%的人大部分是特別敏感肌膚的人群，可以建議他們先在局部測試後再使用`, sop: '' },
+      { q: '染劑弄到額頭周圍皮膚怎麼洗？', situation: '染色洗髮精', a: `若 Smib 染髮洗髮精不慎沾染到額頭皮膚，請不用擔心，通常都可以清除。
+
+請依照以下建議步驟溫和處理：
+1. 立即處理：盡快用洗面乳或肥皂的泡沫，搭配溫水輕輕搓洗染色區域。
+2. 專業分解：如果單純清潔無效，請使用卸妝油或卸妝膏輕輕按摩染劑處約 30 秒，再用溫水沖洗。卸妝產品能有效溶解色素。
+3. 加強清潔：若仍有殘留，可使用少量酒精棉片或含有酒精的化妝水輕輕擦拭。（請注意：使用後務必清水沖淨並加強保濕。）
+
+請務必注意：整個過程都請溫和處理，切勿用力搓洗，以免皮膚受傷。若有其他疑問，歡迎隨時聯繫我們。謝謝！`, sop: '' },
+      { q: '請問這個燙髮完可以用嗎？', situation: '染色洗髮精', a: `您好，燙髮後會建議至少隔一週後再使用本產品，因我們未能得知燙髮藥水的成分。
+若您擔心成分與染髮藥水相互作用，還是建議您諮詢專業美髮師！`, sop: '' },
+      { q: '一定要帶手套嗎？', situation: '染色洗髮精', a: `因為指甲的成分也是蛋白質，跟頭髮一樣較易上色。動作快一點洗掉就沒事，但每個人的體溫和皮膚狀況不一樣，如果真的很擔心怕指甲變色，建議還是戴上手套比較安心喔！`, sop: '' },
+      { q: '如果可以染頭髮又可以洗頭的話，為什麼可以接觸到頭皮？原理是什麼？', situation: '染色洗髮精', a: `您好，幫您詢問到，敬請參考。
+
+SMIB 染色洗髮精與傳統染劑不同，傳統染髮是透過化學成分（如PPD（對苯二胺）、阿摩尼亞或雙氧水）「強行滲透」髮芯，容易導致過敏；而我們採用的是「物理包膜上色技術」。
+
+簡單來說，它就像為頭髮「穿上彩色保護衣」：利用正負電荷相吸原理，讓天然可可粉包裹在髮絲外層，不破壞毛鱗片，所以不傷髮質。此外，產品還添加了專利乳酸菌，在洗髮時能同步修復頭皮屏障，這也是為什麼能越洗越亮、越洗越順的原因！`, sop: '' },
+      { q: '建議染色洗髮精先乾上再用自己的洗髮精，還是先用自己的洗髮精再上染色洗髮精呢？', situation: '染色洗髮精', a: `您好，
+1. 想要「上色效果更好」：建議先乾上。這是目前許多使用者反應效果最明顯的方式。
+步驟：在頭髮乾的狀態下，將補色洗髮精均勻塗抹在白髮較多或想補色的區塊，停留約 5-10 分鐘，讓色素有時間附著。
+後續：加水搓揉起泡後沖掉。如果覺得洗淨力不夠，之後再用一般的洗髮精洗一次。這樣可以確保顏色吃進去，同時頭皮也洗乾淨。
+
+2. 想要「日常維護/低調自然」：建議先洗再上。如果您平常頭皮比較油，或者只是想微調髮色：
+步驟：先用一般的洗髮精將頭皮的油脂、髒污與造型品洗掉。
+後續：將頭髮稍微壓乾（不滴水狀態），再塗抹 SMIB 染色洗髮精停留 3-5 分鐘後沖洗。這樣色素比較不會被油脂阻隔，附著度會更均勻。`, sop: '' },
+      { q: '使用SMIB森密染色洗髮精後，去一般髮廊染髮會卡色嗎或染不上去嗎？', situation: '染色洗髮精', a: `SMIB森密染色洗髮精採用的是「物理包膜上色技術」，利用正負電荷相吸原理，讓天然可可粉包裹在髮絲外層。若在使用產品後，立即進行一般常規染髮，可能會因個人毛髮況關係受到些許影響。建議在停止使用大約7-10天後，即可正常進行其他常規染髮或使用其他染色產品。`, sop: '' },
+      { q: '孕期可以使用嗎', situation: '染色洗髮精', a: `染色洗髮精含溫和染劑成分，需要注意懷孕期間因體內荷爾蒙變化，頭皮與肌膚敏感度可能增加，建議孕期（尤其是孕早期/前三個月）應避免使用染髮類產品~孕期中後期如有使用需求，請務必先諮詢主治婦產科醫師，並於手臂內側或耳後進行局部皮膚過敏測試唷！`, sop: '' },
+      { q: 'SMIB 頭皮淨化三效調理慕斯 對脫髮有效嗎?', situation: '調理慕斯', a: `SMIB的頭皮三效調理慕斯已通過韓國食藥署管理局認證，添加具有強健髮根的功能性成分，有助於保持頭皮與髮絲的健康，並有效去除多餘的油脂與髒汙，同時舒緩頭皮狀態。`, sop: '' },
+      { q: '敏感頭皮可以使用頭皮淨化三效調理慕斯嗎?', situation: '調理慕斯', a: `本產品專為問題頭皮所設計，適合敏感頭皮，能徹底清潔毛孔，促進血液循環，調節頭皮油脂平衡，提供舒適的頭皮護理，但若有皮膚炎或是其他疾病，建議先諮詢專業醫生後再使用。`, sop: '' },
+      { q: '頭皮淨化三效調理慕斯可以每天使用嗎?', situation: '調理慕斯', a: `對於不同頭皮狀況，建議使用頻率如下：
+油性頭皮：每周4~5次
+乾性頭皮：每周2~3次`, sop: '' },
+      { q: '為什麼是叫1分鐘奇蹟蛋白護髮素？', situation: '護髮素', a: `您提到的「1分鐘」是指我們的護髮素即使只停留短短1分鐘，也能感受到立即的柔順效果。而說明書建議停留5-10分鐘，是考慮到每個人髮質不同，也是為了讓產品中的蛋白修護成分有更充分的時間滲透髮芯，為您帶來更深層、更持久的滋養和修護效果，當然您可以根據您的髮質受損程度來調整停留時間唷~謝謝您`, sop: '' },
+      { q: '護髮素每次用量大約是多少呢？', situation: '護髮素', a: `護髮素的用量會根據您的髮長和髮量而有所不同，護髮素通常只需塗抹在「髮中到髮尾」。
+這邊給大家建議的用量~
+短髮：1個10元硬幣大小
+中長髮：2個10元硬幣大小
+長髮/髮量多：1~2個50元硬幣大小`, sop: '' },
+      { q: '護髮素一罐大概可以用多久呢？', situation: '護髮素', a: `這取決於您的使用頻率和用量。
+護髮素(400g)：若每天使用一次，約 2.5-4 個月`, sop: '' },
+      { q: '護髮素即便接觸到頭皮也沒問題嗎', situation: '護髮素', a: `關於您的擔心請放心，我們SMIB這款護髮素即便接觸到頭皮也完全沒問題，能給予頭皮良好的護理效果。這款產品通過了韓國食藥處認證，屬於能強健髮根、優化頭皮環境的功能性產品；正因為它在『頭皮護理』上的表現非常優秀，才能順利取得這項認證，這款不會長背痘、不油好沖洗的原因也是這樣，您可以安心使用唷！謝謝`, sop: '' },
+      { q: '洗髮精有生髮功能嗎？', situation: '強健髮根洗髮精', a: `SMIB洗髮精的主要作用是清潔頭皮、調理健康環境，並強健髮根，而不是直接「生髮」。SMIB的獨家專利成分，旨在清潔毛孔堆積的髒污、平衡頭皮油脂，從根本上為頭髮創造一個健康的生長環境；而醫學上認定的「生髮」通常需要藥物成分，生髮這部分需求建議諮詢專業醫師唷。`, sop: '' },
+      { q: '洗髮精一罐大概可以用多久呢？', situation: '強健髮根洗髮精', a: `這取決於您的使用頻率和用量。
+洗髮精(400ml)：若每天洗一次，按壓 1-2 次，約1.5 - 2.5月`, sop: '' },
+      { q: '洗髮精起泡很少？', situation: '強健髮根洗髮精', a: `我們這款洗髮精採用的是溫和且低刺激的清潔成分，因此可能不如強力起泡劑的產品那樣瞬間產生大量泡沫，因小編都固定使用自家洗髮精，其實是可以洗出很多泡泡的唷！泡泡蓬鬆蓬鬆~推薦給您
+
+如果希望泡沫更豐富一點，有以下建議方式：
+🔸過程適量加水 (單次洗髮建議)：這款因為質地濃稠的關係，可以少量多次的上髮~如果覺得泡沫不夠，建議不要只增加洗髮精用量或直接將洗髮精倒在頭髮上，而是分次沾取+少量溫水搓揉後上髮，邊搓揉頭髮邊補水，這樣會有很多泡泡唷。(所有洗髮精都建議不要直接上髮~搓揉出泡泡再去上會對頭皮比較好，用量也可以少一點~)
+🔸分次洗髮(兩次洗髮者建議)：這也是美髮沙龍常用的技巧：第一次洗髮時，因為頭髮上有髒污與油脂，會比較難起泡，用量可以少一點，快速帶過。第二次洗髮時，頭髮已初步潔淨，泡沫自然就會變得豐盈許多喔！`, sop: '' },
+      { q: '會過度清潔或乾燥嗎？', situation: '強健髮根洗髮精', a: `SMIB 專利乳酸菌洗髮的核心是「調理頭皮環境」，而不是「單純專注控油」唷！
+
+🧴 不是強力去油，而是溫和調理：SMIB 專注於用「1000億乳酸菌專利配方」去調理頭皮環境。它不是以單一的去皮脂為主要目標，而是讓頭皮環境達到平衡，出油狀況自然改善，所以比起一般控油洗髮精來說，訴求的方向不一樣，比較不會犧牲頭皮的水分去達到強烈的控油效果～
+💧泡沫細緻、不含刺激性清潔成分：我們的洗髮精專注成分嚴選且溫和，所以跟一般的洗髮精比起來起泡的量不會那麼多，清潔時不會帶走過多必要的皮脂，保留頭皮的天然保護層，能溫和洗淨頭皮累積的老廢角質和多餘油脂。
+
+很多乾燥、敏感較為頭皮的顧客都回饋使用感很舒緩、舒適，有頭皮屑問題（乾燥、不適脫皮等）的人也都有不錯的感受喔！`, sop: '' },
+      { q: '請問如果是偏乾燥的易癢過敏頭皮也適合嗎？', situation: '強健髮根洗髮精', a: `這款 SMIB 洗髮精在韓國市場上，其實就是針對調理頭皮環境、維持頭皮健康這個方向去研發的喔（跟您提出的需求是很相符的！）
+我們韓國團隊是基於專業的頭皮護理理念進行研發，目前許多有頭皮相關困擾的顧客，使用後都給予了很不錯的反饋呢！
+綜合產品的研發定位和顧客的真實回饋，這款洗護組非常適合注重頭皮健康、想改善頭皮困擾的族群！很推薦您可以給它一個嘗試的機會喔～`, sop: '' },
+      { q: '是一般俗稱的泡沫染嗎？', situation: '強健髮根洗髮精', a: `您好，SMIB 染色洗髮精與傳統染劑不同，傳統染髮是透過化學成分（如PPD（對苯二胺）、阿摩尼亞或雙氧水）「強行滲透」髮芯，容易導致過敏；而我們採用的是「物理包膜上色技術」。
+簡單來說，它就像為頭髮「穿上彩色保護衣」：利用正負電荷相吸原理，讓天然可可粉包裹在髮絲外層，不破壞毛鱗片，所以不傷髮質。此外，產品還添加了專利乳酸菌，在洗髮時能同步修護頭皮屏障，這也是為什麼能洗染完不乾澀的原因！`, sop: '' },
+      { q: '請問SMIB全產品：1.蠶豆症者可以用嗎？2.成分是否含有指甲花（Henna）或其他醌類衍生物呢？', situation: '全產品Q&A', a: `蠶豆症的部分目前關於是否會產生影響尚無相關文獻或報告，但為了您的安全考量，建議暫停使用。
+鳳仙花的部分本產品雖不含所述成分，但若您曾對該成分產生過敏反應，建議使用前務必先進行局部皮膚測試。請確實執行 48 小時觀察測試，確認肌膚無異常反應後再行使用。
+
+（備註：鳳仙花 Impatiens balsamina 在台灣民間習慣被稱為「指甲花」）`, sop: '' },
+      { q: '請問 SMIB 1000億乳酸菌 強健髮根洗髮精 全成分?', situation: '全產品Q&A', a: `這款洗髮精主要採用溫和潔淨配方，搭配益生菌發酵成分、菸鹼醯胺（維生素B3）、維生素原B5（Panthenol）及多種植物萃取，幫助維持頭皮清潔與舒適感。
+
+主要成分特色如下：
+✔️ 溫和清潔成分：採用胺基酸系及溫和界面活性劑，清潔頭皮與髮絲髒污，同時降低洗後乾澀感。
+✔️ 益生菌發酵成分：添加 Lactococcus Ferment Lysate、Bacillus Ferment 等發酵成分，協助維持頭皮健康環境。
+✔️ 頭皮調理成分：含菸鹼醯胺（Niacinamide）、水楊酸（Salicylic Acid）、薄荷醇（Menthol），可幫助頭皮清潔與維持清爽感。
+✔️ 保濕修護成分：添加甘油（Glycerin）、維生素原B5（Dexpanthenol）及護髮成分 Polyquaternium-7，幫助髮絲維持柔順與保濕。
+✔️ 植物萃取成分：含魚腥草、金盞花、紫錐花、胡蘿蔔葉、狗尾草、覆盆子根等植物萃取，提供頭皮日常保養。
+✔️ 植物油成分：添加葵花籽油（Sunflower Seed Oil），有助於滋潤髮絲。
+
+（原始全成分表格因表單格式問題部分文字截斷，如客人需要完整INCI成分表，請洽詢負責人確認正式版本）`, sop: '' },
+      { q: 'SMIB森密_告別白髮 1000億乳酸菌染色洗髮精全成分', situation: '全產品Q&A', a: `這款 SMIB Lactobio Color Change Shampoo 為結合頭皮清潔、養護與染髮需求的洗髮產品，配方中除了染髮相關成分外，也添加多種植物萃取、發酵成分及頭皮保養成分，讓染髮與日常頭皮養護同步進行。
+
+主要成分特色如下：
+✔️ 染髮著色成分：含 Aminophenol、m-Aminophenol、Resorcinol 等染髮著色成分，搭配顯色劑（雙氧水）使用，可協助髮絲呈現染後色澤。
+✔️ 頭皮舒緩保養：添加積雪草萃取、甘草酸二鉀、洋甘菊萃取等成分，幫助維持頭皮舒適狀態。
+✔️ 益生菌發酵成分：含 Lactococcus Ferment Lysate、酵母萃取（Saccharomyces Extract）等發酵成分，作為頭皮日常養護配方之一。
+✔️ 胜肽養護成分：添加 Palmitoyl Tripeptide-1，作為頭皮與髮絲養護成分。
+✔️ 蛋白質修護成分：含水解玉米蛋白、水解大豆蛋白、水解米蛋白等成分，有助於維持髮絲柔順感。
+✔️ 植物萃取複合配方：添加綠茶、羅勒、迷迭香、薰衣草、尤加利、橘子葉、佛手柑、檸檬皮、柿子果實等多種植物萃取，提供頭皮與髮絲保養。
+✔️ 植物油滋潤：添加山茶花籽油、葵花籽油等植物油成分，幫助髮絲維持光澤與柔順。
+✔️ 頭皮清潔成分：採用多種界面活性劑配方，幫助清潔頭皮油脂及髮絲髒污。`, sop: '' }
+    ]
+  }
+];
+
+/* 合併：用於跨分類搜尋與依 id 查找 */
+const CATEGORIES = GENERAL_CATEGORIES.concat(BRAND_CATEGORIES);
+
+let activeCat = CATEGORIES[0].id;
+
+/* ============ Init ============ */
+window.addEventListener('DOMContentLoaded', () => {
+  renderSidebar();
+  renderQa();
+  loadApiKeyStatus();
+});
+
+/* ============ Tabs ============ */
+function switchTab(tab){
+  document.getElementById('panelQa').style.display = tab === 'qa' ? 'block' : 'none';
+  document.getElementById('panelAi').style.display = tab === 'ai' ? 'block' : 'none';
+  document.getElementById('tabBtnQa').classList.toggle('active', tab === 'qa');
+  document.getElementById('tabBtnAi').classList.toggle('active', tab === 'ai');
+}
+
+/* ============ Sidebar ============ */
+function renderCatBtn(cat){
+  return `
+    <button class="cat-btn ${cat.id === activeCat ? 'active' : ''}" onclick="selectCategory('${cat.id}')">
+      <span>${cat.icon} ${escapeHtml(cat.name)}</span>
+      <span class="cnt">${cat.items.length}</span>
+    </button>
+  `;
+}
+
+function renderSidebar(){
+  const nav = document.getElementById('qaSidebar');
+  nav.innerHTML = `
+    <div class="sidebar-heading">一般客服</div>
+    ${GENERAL_CATEGORIES.map(renderCatBtn).join('')}
+    <div class="sidebar-heading">品牌 QA</div>
+    ${BRAND_CATEGORIES.map(renderCatBtn).join('')}
+  `;
+}
+
+function selectCategory(id){
+  activeCat = id;
+  document.getElementById('qaSearch').value = '';
+  renderSidebar();
+  renderQa();
+}
+
+function onSearchInput(){
+  renderQa();
+}
+
+/* ============ QA render ============ */
+function renderQa(){
+  const kw = document.getElementById('qaSearch').value.trim().toLowerCase();
+  const list = document.getElementById('qaList');
+  const countEl = document.getElementById('qaCount');
+
+  if(kw){
+    // 搜尋模式：跨所有分類
+    const results = [];
+    CATEGORIES.forEach(cat => {
+      cat.items.forEach(item => {
+        const hay = (item.q + ' ' + item.a + ' ' + (item.situation||'')).toLowerCase();
+        if(hay.includes(kw)) results.push({ cat, item });
+      });
+    });
+    countEl.textContent = `搜尋「${document.getElementById('qaSearch').value.trim()}」，共找到 ${results.length} 筆結果`;
+    if(results.length === 0){
+      list.innerHTML = '<div class="no-result">找不到符合的問題，試試其他關鍵字，或至「AI 問答」發問。</div>';
+      return;
+    }
+    list.innerHTML = results.map((r, i) => renderCard(r.item, r.cat, i)).join('');
+    return;
+  }
+
+  // 分類瀏覽模式
+  const cat = CATEGORIES.find(c => c.id === activeCat) || CATEGORIES[0];
+  countEl.textContent = `${cat.icon} ${cat.name} · 共 ${cat.items.length} 組問答`;
+  if(cat.items.length === 0){
+    list.innerHTML = '<div class="no-result">此分類目前沒有內容</div>';
+    return;
+  }
+  list.innerHTML = cat.items.map((item, i) => renderCard(item, cat, i)).join('');
+}
+
+function renderCard(item, cat, i){
+  const uid = cat.id + '-' + i;
+  const sopHtml = item.sop ? `
+    <button class="sop-toggle" onclick="toggleSop('${uid}')">🔒 內部處理提示</button>
+    <div class="sop-box" id="sop-${uid}">${escapeHtml(item.sop)}</div>
+  ` : '';
+  return `
+    <div class="qa-card">
+      <span class="cat-tag">${cat.icon} ${escapeHtml(cat.name)}</span>${item.situation ? `<span class="sit-tag">情況：${escapeHtml(item.situation)}</span>` : ''}
+      <div class="q">Q：${escapeHtml(item.q)}</div>
+      <div class="a">${escapeHtml(item.a)}</div>
+      ${sopHtml}
+    </div>
+  `;
+}
+
+function toggleSop(uid){
+  document.getElementById('sop-' + uid).classList.toggle('open');
+}
+
+function escapeHtml(str){
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ============ AI chat (Groq API) ============ */
+function saveApiKey(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(!key){ return; }
+  localStorage.setItem('groq_api_key', key);
+  document.getElementById('apiKeyInput').value = '';
+  loadApiKeyStatus();
+}
+
+function loadApiKeyStatus(){
+  const key = localStorage.getItem('groq_api_key');
+  const status = document.getElementById('apiKeyStatus');
+  if(key){
+    status.textContent = '✅ 已設定金鑰';
+    status.className = 'apikey-status ok';
+    if(document.getElementById('chatBox').childElementCount === 0){
+      appendMsg('bot', '您好！我是信賴生醫的客服小幫手 🌸\n請直接輸入客人的問題，我會依據客服 QA 資料庫為您整理回覆建議。\n例如：「訂單可以取消嗎？」、「怎麼選色號？」');
+    }
+  } else {
+    status.textContent = '⚠️ 尚未設定金鑰，請先貼上 Groq API 金鑰';
+    status.className = 'apikey-status missing';
+  }
+}
+
+function appendMsg(role, text){
+  const box = document.getElementById('chatBox');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function buildKnowledgeBaseText(){
+  return CATEGORIES.map(cat => {
+    const lines = cat.items.map((item, i) => `${i+1}. Q: ${item.q}${item.situation ? '（情況：'+item.situation+'）' : ''}\nA: ${item.a}`).join('\n\n');
+    return `【分類：${cat.name}】\n${lines}`;
+  }).join('\n\n');
+}
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const key = localStorage.getItem('groq_api_key');
+  if(!key){
+    appendMsg('sys', '請先在上方設定 Groq API 金鑰後再發問');
+    return;
+  }
+  appendMsg('user', text);
+  input.value = '';
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  appendMsg('sys', '思考中…');
+
+  const systemPrompt = `你是信賴生醫的客服助理，服務對象是公司的外包客服人員。
+請只依據以下客服 QA 資料庫回答問題，用親切、專業、口語化的繁體中文回覆，語氣可比照資料庫中的「您好」風格。
+若資料庫中有標示「情況」，請依客人描述判斷屬於哪種情況再回覆對應內容。
+若問題不在資料庫範圍內，請誠實告知客服人員「資料庫中查無相關資訊，建議轉交專人確認」，不要編造答案。
+
+客服 QA 資料庫：
+${buildKnowledgeBaseText()}`;
+
+  try{
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.3
+      })
+    });
+    const data = await res.json();
+    removeLastSysMsg();
+    if(data.error){
+      appendMsg('sys', '❌ 發生錯誤：' + data.error.message);
+    } else {
+      const reply = data.choices?.[0]?.message?.content || '（無回應）';
+      appendMsg('bot', reply);
+    }
+  } catch(e){
+    removeLastSysMsg();
+    appendMsg('sys', '❌ 連線失敗，請確認金鑰是否正確或稍後再試');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function removeLastSysMsg(){
+  const box = document.getElementById('chatBox');
+  const msgs = box.querySelectorAll('.msg.sys');
+  if(msgs.length){ msgs[msgs.length-1].remove(); }
+}
+</script>
+</body>
+</html>
