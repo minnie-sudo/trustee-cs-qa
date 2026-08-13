@@ -896,6 +896,29 @@ function appendMsg(role, text){
   box.scrollTop = box.scrollHeight;
 }
 
+function truncateText(s, n){
+  const str = String(s || '');
+  return str.length > n ? str.slice(0, n) + '…（以下省略）' : str;
+}
+
+// 只挑跟客服打的這句話最相關的幾筆QA給AI參考，避免整包資料庫太大超過API的token限制
+function buildRelevantKnowledgeBaseText(queryText, limit){
+  const kwNorm = normText(queryText);
+  const scored = [];
+  CATEGORIES.forEach(cat => {
+    cat.items.forEach(item => {
+      const score = scoreItem(kwNorm, item, cat);
+      if(score > 0) scored.push({ cat, item, score });
+    });
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, limit);
+  if(top.length === 0){
+    return '（沒有找到明確相關的QA，請依常理誠實回覆客服人員查無資料）';
+  }
+  return top.map((r, i) => `${i+1}. 【${r.cat.name}${r.item.situation ? '/' + r.item.situation : ''}】\nQ: ${r.item.q}\nA: ${truncateText(r.item.a, 350)}`).join('\n\n');
+}
+
 function buildKnowledgeBaseText(){
   return CATEGORIES.map(cat => {
     const lines = cat.items.map((item, i) => `${i+1}. Q: ${item.q}${item.situation ? '（情況：'+item.situation+'）' : ''}\nA: ${item.a}`).join('\n\n');
@@ -927,8 +950,8 @@ async function sendChat(){
 4. 若資料庫中有標示「情況」或「系列」，請依客人描述判斷屬於哪一種再回覆對應內容。
 5. 若問題完全不在資料庫範圍內，就自然地告訴客服人員「這個我這邊資料庫查不到相關資訊，建議先跟客人說會再確認，並轉交專人處理」，不要編造答案。
 
-客服 QA 資料庫（事實依據，不是要你照抄的稿子）：
-${buildKnowledgeBaseText()}`;
+以下是跟這次問題最相關的幾筆QA資料（事實依據，不是要你照抄的稿子）：
+${buildRelevantKnowledgeBaseText(text, 6)}`;
 
   try{
     const res = await fetch(CHAT_PROXY_URL, {
