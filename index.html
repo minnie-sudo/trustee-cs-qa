@@ -166,7 +166,7 @@
   <main>
     <!-- QA panel -->
     <section class="panel" id="panelQa">
-      <input id="qaSearch" type="text" placeholder="🔍 搜尋所有分類的問題關鍵字…" oninput="onSearchInput()">
+      <input id="qaSearch" type="text" placeholder="🔍 描述客人的問題或情況即可，不用打一模一樣的字…" oninput="onSearchInput()">
 
       <div class="qa-layout">
         <nav class="qa-sidebar" id="qaSidebar"></nav>
@@ -181,18 +181,13 @@
     <section class="panel" id="panelAi" style="display:none;">
       <h3>AI 問答助手</h3>
       <div class="apikey-note">
-        本功能透過 Groq API 讓 AI 依據客服 QA 資料庫回答問題。金鑰僅儲存在您的瀏覽器中，不會上傳。<br>
-        📌 免費取得金鑰：前往 <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> 註冊申請。
-      </div>
-      <div class="apikey-row">
-        <input id="apiKeyInput" type="password" placeholder="貼上您的 Groq API 金鑰">
-        <button onclick="saveApiKey()">儲存金鑰</button>
+        直接打上客人的問題或情境，AI會依據客服 QA 資料庫，幫你組織一段自然、有溫度的回覆。不用申請、不用貼金鑰，打開就能問。
       </div>
       <div class="apikey-status" id="apiKeyStatus"></div>
 
       <div id="chatBox"></div>
       <div class="chat-input-row">
-        <input id="chatInput" type="text" placeholder="輸入客人的問題，例如：訂單可以取消嗎？" onkeydown="if(event.key==='Enter')sendChat();">
+        <input id="chatInput" type="text" placeholder="輸入客人的問題或情境，例如：客人很不滿意想退貨" onkeydown="if(event.key==='Enter')sendChat();">
         <button id="chatSendBtn" onclick="sendChat()">送出</button>
       </div>
     </section>
@@ -777,23 +772,62 @@ function onSearchInput(){
 }
 
 /* ============ QA render ============ */
+/* ============ 模糊搜尋引擎（不需要 AI/API）============ */
+function normText(s){
+  return String(s || '').toLowerCase().replace(/[，。！？、\s,.!?～~()（）「」『』：:；;\-—_·]/g, '');
+}
+
+// 把字串拆成相鄰兩字的「詞組」（bigram），比單字比對更能抓住中文詞義，減少雜訊
+function bigrams(s){
+  const chars = Array.from(s);
+  if(chars.length < 2) return chars; // 太短就直接用單字
+  const grams = [];
+  for(let i = 0; i < chars.length - 1; i++) grams.push(chars[i] + chars[i+1]);
+  return grams;
+}
+
+// 計算 query 對某段文字的相似度分數：完全包含優先，其次看詞組重疊比例
+function fieldScore(qNorm, textRaw){
+  const tNorm = normText(textRaw);
+  if(!qNorm || !tNorm) return 0;
+  if(tNorm.includes(qNorm)) return 1 + Math.min(qNorm.length / 10, 1); // 完整包含：最高分，長詞加分
+  const qGrams = bigrams(qNorm);
+  if(qGrams.length === 0) return 0;
+  const tGramSet = new Set(bigrams(tNorm));
+  let matched = 0;
+  qGrams.forEach(g => { if(tGramSet.has(g)) matched++; });
+  return matched / qGrams.length; // 0~1：詞組重疊比例
+}
+
+function scoreItem(kwNorm, item, cat){
+  // 問題欄權重最高，其次情況/分類，最後才是內文答案
+  const qs = fieldScore(kwNorm, item.q) * 4;
+  const st = fieldScore(kwNorm, item.situation || '') * 3;
+  const cs = fieldScore(kwNorm, cat.name) * 1.5;
+  const as = fieldScore(kwNorm, item.a) * 1;
+  return qs + st + cs + as;
+}
+
 function renderQa(){
-  const kw = document.getElementById('qaSearch').value.trim().toLowerCase();
+  const kwRaw = document.getElementById('qaSearch').value.trim();
   const list = document.getElementById('qaList');
   const countEl = document.getElementById('qaCount');
 
-  if(kw){
-    // 搜尋模式：跨所有分類
-    const results = [];
+  if(kwRaw){
+    const kwNorm = normText(kwRaw);
+    // 模糊搜尋模式：跨所有分類，依相關度排序，客服不用打出一模一樣的字也找得到
+    const scored = [];
     CATEGORIES.forEach(cat => {
       cat.items.forEach(item => {
-        const hay = (item.q + ' ' + item.a + ' ' + (item.situation||'')).toLowerCase();
-        if(hay.includes(kw)) results.push({ cat, item });
+        const score = scoreItem(kwNorm, item, cat);
+        if(score > 0.5) scored.push({ cat, item, score });
       });
     });
-    countEl.textContent = `搜尋「${document.getElementById('qaSearch').value.trim()}」，共找到 ${results.length} 筆結果`;
+    scored.sort((a, b) => b.score - a.score);
+    const results = scored.slice(0, 15);
+    countEl.textContent = `搜尋「${kwRaw}」，找到 ${results.length} 筆相關結果（依相關度排序，非精準比對，請確認後再回覆客人）`;
     if(results.length === 0){
-      list.innerHTML = '<div class="no-result">找不到符合的問題，試試其他關鍵字，或至「AI 問答」發問。</div>';
+      list.innerHTML = '<div class="no-result">找不到相關的問題，試試換個描述方式，或直接詢問負責人。</div>';
       return;
     }
     list.innerHTML = results.map((r, i) => renderCard(r.item, r.cat, i)).join('');
@@ -834,26 +868,21 @@ function escapeHtml(str){
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-/* ============ AI chat (Groq API) ============ */
-function saveApiKey(){
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if(!key){ return; }
-  localStorage.setItem('groq_api_key', key);
-  document.getElementById('apiKeyInput').value = '';
-  loadApiKeyStatus();
-}
+/* ============ AI chat（透過 Cloudflare Worker 中介服務，客服端不需要金鑰）============ */
+// 部署好 Worker 後，把網址貼在這裡（例如 https://trustee-cs-chat.你的帳號.workers.dev）
+const CHAT_PROXY_URL = 'https://wandering-rice-a0a7.minnie-72b.workers.dev';
 
 function loadApiKeyStatus(){
-  const key = localStorage.getItem('groq_api_key');
   const status = document.getElementById('apiKeyStatus');
-  if(key){
-    status.textContent = '✅ 已設定金鑰';
+  const configured = CHAT_PROXY_URL && !CHAT_PROXY_URL.includes('PASTE_YOUR_WORKER_URL_HERE');
+  if(configured){
+    status.textContent = '✅ AI 問答已連線，直接打字發問即可';
     status.className = 'apikey-status ok';
     if(document.getElementById('chatBox').childElementCount === 0){
-      appendMsg('bot', '您好！我是信賴生醫的客服小幫手 🌸\n請直接輸入客人的問題，我會依據客服 QA 資料庫為您整理回覆建議。\n例如：「訂單可以取消嗎？」、「怎麼選色號？」');
+      appendMsg('bot', '嗨，我是信賴生醫的客服夥伴 🌸\n把客人問的問題或整個情境跟我說，我會幫你組織一段自然、有溫度的回覆，不會是罐頭制式文字唷。\n例如：「客人說收到貨壞了很生氣，怎麼回？」、「客人問可不可以退貨」');
     }
   } else {
-    status.textContent = '⚠️ 尚未設定金鑰，請先貼上 Groq API 金鑰';
+    status.textContent = '⚠️ 尚未連接 AI 服務（管理員需部署 Worker 並填入 CHAT_PROXY_URL）';
     status.className = 'apikey-status missing';
   }
 }
@@ -878,9 +907,8 @@ async function sendChat(){
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if(!text) return;
-  const key = localStorage.getItem('groq_api_key');
-  if(!key){
-    appendMsg('sys', '請先在上方設定 Groq API 金鑰後再發問');
+  if(!CHAT_PROXY_URL || CHAT_PROXY_URL.includes('PASTE_YOUR_WORKER_URL_HERE')){
+    appendMsg('sys', '⚠️ AI 服務尚未連接，請聯繫管理員設定 CHAT_PROXY_URL');
     return;
   }
   appendMsg('user', text);
@@ -889,21 +917,23 @@ async function sendChat(){
   btn.disabled = true;
   appendMsg('sys', '思考中…');
 
-  const systemPrompt = `你是信賴生醫的客服助理，服務對象是公司的外包客服人員。
-請只依據以下客服 QA 資料庫回答問題，用親切、專業、口語化的繁體中文回覆，語氣可比照資料庫中的「您好」風格。
-若資料庫中有標示「情況」，請依客人描述判斷屬於哪種情況再回覆對應內容。
-若問題不在資料庫範圍內，請誠實告知客服人員「資料庫中查無相關資訊，建議轉交專人確認」，不要編造答案。
+  const systemPrompt = `你是信賴生醫的客服夥伴，服務對象是公司的外包客服人員，協助他們組織要回覆給顧客的話。
 
-客服 QA 資料庫：
+你的角色不是照本宣科的機器人，而是一位真心在乎顧客感受、經驗豐富的客服前輩。請把下面的「客服 QA 資料庫」當成你熟知的產品/政策知識與事實依據，但不要整段照抄資料庫裡的制式回覆逐字貼上。你要做的是：
+
+1. 先讀懂客服人員轉述的顧客情境和情緒（是著急？困惑？失望？還是單純想問資訊？），用符合當下情境的語氣回應，展現理解與同理心。
+2. 用你自己的話、自然口語化的繁體中文，把資料庫中的事實、規定、步驟重新組織成一段有溫度、像真人在對話的回覆，而不是條列式的公告文。
+3. 可以視情況調整用詞、順序、開場方式，讓每次的回覆讀起來都不會像是複製貼上的罐頭訊息，但內容中的規定、金額、時間、聯絡方式等事實資訊必須完全忠於資料庫，不能自己編造或改動。
+4. 若資料庫中有標示「情況」或「系列」，請依客人描述判斷屬於哪一種再回覆對應內容。
+5. 若問題完全不在資料庫範圍內，就自然地告訴客服人員「這個我這邊資料庫查不到相關資訊，建議先跟客人說會再確認，並轉交專人處理」，不要編造答案。
+
+客服 QA 資料庫（事實依據，不是要你照抄的稿子）：
 ${buildKnowledgeBaseText()}`;
 
   try{
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const res = await fetch(CHAT_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
         messages: [
@@ -923,7 +953,7 @@ ${buildKnowledgeBaseText()}`;
     }
   } catch(e){
     removeLastSysMsg();
-    appendMsg('sys', '❌ 連線失敗，請確認金鑰是否正確或稍後再試');
+    appendMsg('sys', '❌ 連線失敗，請稍後再試或聯繫管理員');
   } finally {
     btn.disabled = false;
   }
