@@ -878,6 +878,7 @@ https://www.trusteebio.com.tw/pages/smib-color-change-shampoo-
 const CATEGORIES = GENERAL_CATEGORIES.concat(BRAND_CATEGORIES);
 
 let activeCat = CATEGORIES[0].id;
+let chatHistory = []; // AI 問答的對話記錄（僅存在記憶體中，重新整理頁面就會清空）
 
 /* ============ Init ============ */
 window.addEventListener('DOMContentLoaded', () => {
@@ -1094,6 +1095,14 @@ async function sendChat(){
   btn.disabled = true;
   appendMsg('sys', '思考中…');
 
+  // 把這句話加進對話記錄；只保留最近幾輪，避免資料量過大超過API限制
+  chatHistory.push({ role: 'user', content: text });
+  chatHistory = chatHistory.slice(-8);
+
+  // 找相關QA時，把最近幾句「客服打的話」合併起來一起比對，而不是只看這一句，
+  // 這樣像「我是敏感肌」這種簡短的追問，才不會因為脫離上下文而比對到別的品牌
+  const recentUserTurns = chatHistory.filter(m => m.role === 'user').map(m => m.content).join(' ');
+
   const systemPrompt = `你是信賴生醫的客服夥伴，服務對象是公司的外包客服人員，協助他們組織要回覆給顧客的話。
 
 你的角色不是照本宣科的機器人，而是一位真心在乎顧客感受、經驗豐富的客服前輩。請把下面的「客服 QA 資料庫」當成你熟知的產品/政策知識與事實依據，但不要整段照抄資料庫裡的制式回覆逐字貼上。你要做的是：
@@ -1103,9 +1112,10 @@ async function sendChat(){
 3. 可以視情況調整用詞、順序、開場方式，讓每次的回覆讀起來都不會像是複製貼上的罐頭訊息，但內容中的規定、金額、時間、通路、聯絡方式等事實資訊必須完全忠於下面提供的QA資料，不能自己編造、推測或補充資料裡沒有明確寫出的細節（例如：資料只寫兩個購買通路，就絕對不能自己多加「其他線上平台」「實體店面」等資料裡沒提到的通路；不同品牌的規定即使類似也不能互相套用，要以該品牌自己的QA為準）。
 4. 若資料庫中有標示「情況」或「系列」，請依客人描述判斷屬於哪一種再回覆對應內容。
 5. 若問題完全不在資料庫範圍內，就自然地告訴客服人員「這個我這邊資料庫查不到相關資訊，建議先跟客人說會再確認，並轉交專人處理」，不要編造答案。
+6. 這是一段連續對話，請參考前面的對話紀錄判斷現在在討論哪個品牌/哪個主題。如果客服人員這句話很短（例如只回答「我是敏感肌」這種延續前一句的補充資訊），請沿用同一個品牌/主題繼續回答，不要因為這句話單獨看起來像別的品牌就跳去講別的品牌，除非客服人員明確換了問題或提到別的品牌名稱。
 
-以下是跟這次問題最相關的幾筆QA資料（事實依據，不是要你照抄的稿子）：
-${buildRelevantKnowledgeBaseText(text, 6)}`;
+以下是跟目前這段對話最相關的幾筆QA資料（事實依據，不是要你照抄的稿子）：
+${buildRelevantKnowledgeBaseText(recentUserTurns, 6)}`;
 
   try{
     const res = await fetch(CHAT_PROXY_URL, {
@@ -1115,7 +1125,7 @@ ${buildRelevantKnowledgeBaseText(text, 6)}`;
         model: 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: text }
+          ...chatHistory
         ],
         temperature: 0.3
       })
@@ -1124,13 +1134,17 @@ ${buildRelevantKnowledgeBaseText(text, 6)}`;
     removeLastSysMsg();
     if(data.error){
       appendMsg('sys', '❌ 發生錯誤：' + data.error.message);
+      chatHistory.pop(); // 失敗的話把剛剛那句拿掉，避免記錄裡留下沒有回覆的問題
     } else {
       const reply = data.choices?.[0]?.message?.content || '（無回應）';
       appendMsg('bot', reply);
+      chatHistory.push({ role: 'assistant', content: reply });
+      chatHistory = chatHistory.slice(-8);
     }
   } catch(e){
     removeLastSysMsg();
     appendMsg('sys', '❌ 連線失敗，請稍後再試或聯繫管理員');
+    chatHistory.pop();
   } finally {
     btn.disabled = false;
   }
