@@ -364,13 +364,22 @@ Line pay付款：
   {
     id: 'buy', name: '哪裡可以購買', icon: '🛒',
     items: [
-      { q: '請問要在哪裡購買？', a: `您好，我們提供購買的渠道有官網、蝦皮跟momo，以下附連結給您謝謝～
+      { q: '請問要在哪裡購買？', situation: '線上通路', a: `您好，我們全品牌（TRUSTEE、23YEARSOLD、LAGOM、HEALIC、Angel's Liquid、SMIB）都可以在以下線上渠道購買，以下附連結給您謝謝～
 
 官網：https://www.trusteebio.com.tw/
 
 蝦皮：https://shopee.tw/trustee_tw?categoryId=100630&entryPoint=ShopByPDP&itemId=26936792342
 
-momo：https://www.momoshop.com.tw/TP/TP0006611/main?entpCode=TP0006611`, sop: '' }
+momo：https://www.momoshop.com.tw/TP/TP0006611/main?entpCode=TP0006611`, sop: '' },
+      { q: '請問實體店面哪裡買得到？', situation: '實體通路', a: `您好，除了線上官網/蝦皮/momo以外，我們的品牌也有在以下實體通路販售：
+
+寶雅：TRUSTEE、LAGOM、Angel's Liquid、23YEARSOLD
+
+康是美：HEALIC、BeginS
+
+藥局：SMIB（台北-快樂鳥藥局、台中-三商藥局＆宇霖生醫）
+
+建議您可以就近前往門市選購，謝謝！`, sop: '' }
     ]
   },
   {
@@ -716,7 +725,7 @@ SMIB 染色洗髮精與傳統染劑不同，傳統染髮是透過化學成分（
 ✔️ 植物萃取複合配方：添加綠茶、羅勒、迷迭香、薰衣草、尤加利、橘子葉、佛手柑、檸檬皮、柿子果實等多種植物萃取，提供頭皮與髮絲保養。
 ✔️ 植物油滋潤：添加山茶花籽油、葵花籽油等植物油成分，幫助髮絲維持光澤與柔順。
 ✔️ 頭皮清潔成分：採用多種界面活性劑配方，幫助清潔頭皮油脂及髮絲髒污。`, sop: '' },
-      { q: '請問SMIB哪裡可以買？', situation: '全產品Q&A', a: `SMIB 目前只有在指定藥局跟我們的官方網站有販售，其他通路（如蝦皮、momo等）沒有上架，購買前請認明這兩個管道，謝謝您！`, sop: '' }
+      { q: '請問SMIB哪裡可以買？', situation: '全產品Q&A', a: `SMIB 可以在我們的官網、蝦皮、momo線上購買，實體通路則是台北-快樂鳥藥局、台中-三商藥局＆宇霖生醫這幾間指定藥局有販售，購買前建議認明這幾個管道，謝謝您！`, sop: '' }
     ]
   }
 ];
