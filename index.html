@@ -1252,7 +1252,9 @@ function buildRelevantProductText(queryText, limit){
   scored.sort((a, b) => b.score - a.score);
   const top = scored.slice(0, limit);
   if(top.length === 0) return '';
-  return top.map((r, i) => `${i+1}. 【${r.p.brand}】${r.p.name}（${r.p.price}）\n${truncateText(r.p.info, 220)}`).join('\n\n');
+  // 注意：這裡故意不把 r.p.price 放進去。官網產品資料是靜態快照，價格很容易跟官網現況對不上，
+  // 為了不讓AI講出可能已經過期的價格誤導客人，這份資料只給名稱／成分／用法，價格一律不提供給AI。
+  return top.map((r, i) => `${i+1}. 【${r.p.brand}】${r.p.name}\n${truncateText(r.p.info, 220)}`).join('\n\n');
 }
 
 function buildKnowledgeBaseText(){
