@@ -886,6 +886,161 @@ https://www.trusteebio.com.tw/pages/smib-color-change-shampoo-
 /* 合併：用於跨分類搜尋與依 id 查找 */
 const CATEGORIES = GENERAL_CATEGORIES.concat(BRAND_CATEGORIES);
 
+/* ============ 官網產品資料（2026-08-14 從 trusteebio.com.tw 各產品頁蒐集） ============
+   用途：讓 AI 問答在回覆客人時，除了客服QA之外，也能參考官網公開的產品描述/使用方法/成分。
+   注意：以下內容都是官網頁面上實際寫出來的文字，沒有寫的欄位就留空，AI 不會、也不該自己編。
+   官網改版或更新產品內容後，這份資料需要重新蒐集才會同步，不是即時抓取。 */
+const OFFICIAL_PRODUCTS = [
+  {
+    brand: 'BFFECT', name: '【戰痘瓶】Acno 敏感肌抗痘精華', price: 'NT$720（目前售完）',
+    url: 'https://www.trusteebio.com.tw/products/【戰痘瓶】acno-敏感肌抗痘精華',
+    info: '無酸抗痘保養，敏弱肌也可以安心使用。添加繖花醇與感光素201等成分，改善肌膚痘痘問題，平衡肌膚油脂分泌，舒緩肌膚，溫和代謝老廢角質，不含酸性成分。官網頁面沒有寫明確的使用方法/用量/頻率。'
+  },
+  {
+    brand: 'BFFECT', name: '【乖乖瓶】Calmer 高效修護精華', price: 'NT$690（目前售完）',
+    url: 'https://www.trusteebio.com.tw/products/【乖乖瓶】calmer-高效修護精華',
+    info: '乾燥敏感肌的日常修護精華，舒緩泛紅、乾癢與脫屑不適，同時修護肌膚屏障、提升保濕力。由皮膚專業醫師共同研發，溫和穩膚。官網頁面沒有寫明確的使用方法/用量/頻率。'
+  },
+  {
+    brand: 'BFFECT', name: '【爆水瓶】2% 多重玻尿酸 + 1% 寡糖胺基酸', price: 'NT$520',
+    url: 'https://www.trusteebio.com.tw/products/【爆水瓶】2-多重玻尿酸-1-寡糖胺基酸',
+    info: '保濕加倍，降低水分流失，維持肌膚彈性，適合整天待冷氣房的人。融合低、中、高分子量的玻尿酸，滲透肌底達深層補水，短時間大量提升皮膚含水量，不含刺激成分、不含油脂及任何致粉刺成分。適用膚質：混合性、中性、乾性膚質。官網頁面沒有寫明確的使用方法/用量/頻率（該區塊是圖片，非文字）。'
+  },
+  {
+    brand: 'BFFECT', name: '【10B修復瓶】10% 維他命B3 + 2% 淡紋四胜肽', price: 'NT$380',
+    url: 'https://www.trusteebio.com.tw/products/【10b修復瓶】10-維他命b3-2-淡紋四胜肽',
+    info: '啟動肌膚抗老修復力，恢復肌膚彈性。添加10% Niacinamide、2% MATRIXYL雙重配方，可修護肌膚、延緩老化、淡化紋路，恢復肌膚彈性，提升肌膚對環境傷害的保護力，減少皮脂分泌，細緻毛孔，改善肌膚粗糙暗沉問題。官網頁面沒有寫明確的使用方法/用量/頻率。'
+  },
+  {
+    brand: 'BFFECT', name: '【水水瓶】2% 多重玻尿酸 + 1% Na-PCA', price: 'NT$450',
+    url: 'https://www.trusteebio.com.tw/products/【水水瓶】2-多重玻尿酸-1-na-pca',
+    info: '熱銷25萬瓶，回購不斷。舒緩乾燥、水嫩光澤、質地清爽，任何膚質都能安心使用，不添加香精、溫和低負擔。獨家黃金比例玻尿酸配方，低、中、高分子量層層滲透，深入肌底補水，快速提升含水量。官網頁面沒有寫明確的使用方法/用量/頻率。'
+  },
+  {
+    brand: 'trustee（Solution系列）', name: '{Solution}30%胺基酸保濕洗面乳', price: 'NT$480',
+    url: 'https://www.trusteebio.com.tw/products/trustee＿solution30-gentle-cleasing',
+    info: '溫和洗淨肌膚，不過度清潔，洗後肌膚清爽不緊繃、柔嫩保濕。成份單純，低刺激、低過敏原料，不含皂基、酒精、色素、香料，味道不刺鼻，起泡簡單易沖淨。官網頁面沒有寫明確的使用步驟/頻率。'
+  },
+  {
+    brand: 'trustee（Solution系列）', name: '{Solution}10%菸鹼醯胺修護解方精華乳', price: 'NT$990',
+    url: 'https://www.trusteebio.com.tw/products/solution-10-niacinamide-repair-lotion',
+    info: '內容量：50ml。原產地：台灣。使用方法：取3至5滴於解方精華後使用於臉部或頸部，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
+  },
+  {
+    brand: 'trustee（Solution系列）', name: '{Solution}5%菸鹼醯胺抗痘解方精華乳', price: 'NT$990',
+    url: 'https://www.trusteebio.com.tw/products/solution-5-niacinamide-acne-purifying-lotion',
+    info: '內容量：50ml。原產地：台灣。使用方法：取3至5滴於解方精華後使用於臉部或頸部，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
+  },
+  {
+    brand: 'trustee（Solution系列）', name: '{Solution}5%杏仁酸抗痘解方精華', price: 'NT$920',
+    url: 'https://www.trusteebio.com.tw/products/solution-mandelic-acid-acne-purifying-serum',
+    info: '內容量：30ml。原產地：台灣。使用方法：清潔過後，取3-5滴均勻塗抹在臉部和頸部，可接續使用保濕乳或保濕霜，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
+  },
+  {
+    brand: 'trustee（Solution系列）', name: '{Solution}10%菸鹼醯胺修護解方精華', price: 'NT$920',
+    url: 'https://www.trusteebio.com.tw/products/solution-10-niacinamide-repair-serum',
+    info: '內容量：30ml。使用方法：清潔過後，取3-5滴均勻塗抹在臉部和頸部，可接續使用保濕乳或保濕霜，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
+  },
+  {
+    brand: 'HEALIC', name: '水潤保濕防曬乳 50g/條', price: 'NT$890',
+    url: 'https://www.trusteebio.com.tw/products/healic-healic-uv-defence-watery-sunscreen-50g',
+    info: 'SPF50+ PA++++。清透保濕、高效防護、海洋友善配方。奶油質地貼合不黏膩，保濕同時穩定膚況，全天對抗紫外線與藍光傷害。美白・抗皺・抗UV三效合一，添加低分子膠原蛋白與PDRN。通過敏感肌與眼周刺激測試。官網頁面沒有寫明確的使用步驟/用量。'
+  },
+  {
+    brand: 'HEALIC', name: '粉嫩亮膚防曬乳 50g/條', price: 'NT$890',
+    url: 'https://www.trusteebio.com.tw/products/healic-healic-uv-defence-tone-up-sunscreen-50g',
+    info: 'SPF50+ PA++++，帶妝前修飾膚色效果。質地柔滑如奶霜，一抹均勻膚色、自然提亮不死白。美白・抗皺・抗UV三效合一，添加低分子膠原蛋白與PDRN。通過敏感肌與眼周刺激測試，海洋友善配方。官網頁面沒有寫明確的使用步驟/用量。'
+  },
+  {
+    brand: 'HEALIC', name: '水潤亮白爽膚面膜 5片/盒', price: 'NT$980',
+    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-mask',
+    info: '整瓶美白精華液濃縮在一張面膜中，面料較厚。含椰子果肉萃取COCOSIL™抗氧化保濕；核心成分「傳明酸」（Toning Effector™，濃度20,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；積雪草提取物鎮靜肌膚。全膚質適用，通過德國德瑪低刺激認證，敏感肌膚也能使用。官網頁面沒有寫明確敷多久/一週幾次。'
+  },
+  {
+    brand: 'HEALIC', name: '水潤亮白爆水面霜 60g/條', price: 'NT$1,280',
+    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-cream',
+    info: '美白+保濕+舒緩三合一，軟膏質地。核心成分「傳明酸」（Toning Effector™，濃度20,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；另含Para-coumaric Acid植物性美白成分（幾乎無刺激）、積雪草萃取物、羥基積雪草苷（修護敏感肌）、D-泛醇（保濕補水）。全膚質適用，通過德國德瑪低刺激認證，敏感肌膚也能使用。'
+  },
+  {
+    brand: 'HEALIC', name: '水潤亮白爽膚精華液 50ml/瓶', price: 'NT$1,580',
+    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-ampoule',
+    info: '高濃度美白精華，訴求改善雀斑和瑕疵。核心成分「傳明酸」（Toning Effector™，全系列中濃度最高，達70,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；另含沙棘果提取物（維生素C是檸檬30倍以上）、甘草提取物（阻斷黑色素合成）、蜂膠複合物、維生素複合物。全膚質適用，通過德國德瑪低刺激認證，敏感肌膚也能使用。'
+  },
+  {
+    brand: 'HEALIC', name: '水潤亮白爽膚棉 70片/盒', price: 'NT$1,180',
+    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-pad',
+    info: '訴求「一擦二敷」：先當化妝水棉片擦拭老廢角質，也可敷在臉上當簡易面膜，建議睡前/妝前使用。U型棉片設計貼合眼周。核心成分「傳明酸」（Toning Effector™，濃度10,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；另含沙棘果提取物等美白成分。天然人造絲纖維，不易起球。'
+  },
+  {
+    brand: '23YEARSOLD', name: '心葉淨透遮瑕膏（各色號）', price: 'NT$399（原價NT$570）',
+    url: 'https://www.trusteebio.com.tw/products/23yearsold-derma-thin-concealer-no25-1-1-1',
+    info: '日本Qoo10遮瑕類銷售冠軍，藥局研發，訴求輕薄又高遮瑕的「修護型遮瑕」，抗汗不易脫妝、溫和不刺激。富含28,000ppm心葉萃取物助於肌膚再生及修護；添加積雪草萃取物和專利成分SWEETONE舒緩泛紅與敏感肌膚。通過低刺激與不阻塞毛孔測試，敏感肌、痘痘肌也能安心使用。官網有多種色號（如5Y焦糖麥色、2.5N暖陽裸膚、0.5P粉潤米膚等），使用方法/膚質適用性各色號皆相同，差別只在顏色。'
+  },
+  {
+    brand: '23YEARSOLD', name: '心葉淨透氣墊粉餅（各色號）', price: 'NT$649（原價NT$750）',
+    url: 'https://www.trusteebio.com.tw/products/23yearsold-derma-thin-heartleaf-cushion-no23',
+    info: '韓國Ably底妝類銷售冠軍，藥局研發，訴求輕薄又高遮瑕的「修護型氣墊」，輕拍即可完成遮瑕＋修護舒緩。富含10,000ppm心葉萃取物助於肌膚再生及修護。通過低刺激與不阻塞毛孔測試，敏感肌、痘痘肌也能安心使用。官網有多種色號（如23號自然米膚、21號自然象牙、19號明亮米膚等），使用方法/膚質適用性各色號皆相同，差別只在顏色。'
+  },
+  {
+    brand: 'SMIB', name: '1000億乳酸菌 強健髮根養護洗髮精', price: 'NT$770（原價NT$990）',
+    url: 'https://www.trusteebio.com.tw/products/smib-1000億乳酸菌-強健髮根養護洗髮精',
+    info: '專利益生菌添加，穩定＆養護頭皮，從根本照顧髮的健康。宣稱頭皮出油有感改善83.9%，洗後不乾澀（保濕配方），0矽靈添加，強健髮根。含20種天然提取物和植物肽成分。官網頁面沒有寫明確的使用步驟/停留時間，屬一般洗髮精用法。'
+  },
+  {
+    brand: 'SMIB', name: '告別白髮 1000億乳酸菌染色洗髮精 200ml（柔棕黑／自然棕，預購商品）', price: 'NT$790（原價NT$1,000）',
+    url: 'https://www.trusteebio.com.tw/products/smib-ractobio-color-change-shampooblack',
+    info: '＊此為預購商品，預購18-30個工作天出貨。專為銀髮族、少年白設計，訴求在家輕鬆洗出黑髮。只要5分鐘，告別白髮＋染色＋修護一瓶搞定；使用一次，白髮遮蓋率宣稱高達80%。1000億乳酸菌＋HP-DCC複合專利，有效強健髮根；可可粉自然染色、無PPD、不刺激頭皮；含植物幹細胞、胡蘿蔔果實精華，強韌髮絲、均勻上色。官網頁面沒有寫明確的「塗抹後停留5分鐘」以外更細的步驟（例如是否需要戴手套、分區上色等），若客人問到這類細節建議提醒客服人員跟品牌方確認。'
+  },
+  {
+    brand: 'SMIB', name: '1000億乳酸菌 1分鐘奇蹟絲柔蛋白護髮素 400g', price: 'NT$790（原價NT$1,020）',
+    url: 'https://www.trusteebio.com.tw/products/smib--lactobio-1-minute-silk-hair-treatment',
+    info: '10重水解蛋白絲柔修護，訴求1分鐘內改善毛躁與乾枯。維他命B複合（菸鹼醯胺）＋乳酸菌，增厚髮絲、養護頭皮；添加天然護髮油，隔離熱傷害，恢復柔亮觸感。官網頁面沒有寫明確的使用步驟（一般護髮素用法：洗髮後塗抹、停留約1分鐘後沖洗）。'
+  },
+  {
+    brand: 'LAGOM', name: '深層保濕修護霜 60mL', price: 'NT$920（原價NT$1,380）',
+    url: 'https://www.trusteebio.com.tw/products/lagom-cellus-deep-moisture-cream-60ml',
+    info: '為乾燥肌膚深層補水，訴求越擦越水潤緊緻。添加獨家保濕成分AQUALICIA®及天然保濕因子（NMF），深入肌底啟動天然「水通道蛋白」，雙重鎖水系統，提升肌膚含水量與保水力，打造柔嫩細緻的肌膚。官網頁面沒有寫明確的使用步驟/用量。'
+  },
+  {
+    brand: 'LAGOM', name: '水潤多酚精華 50mL', price: 'NT$1,030（原價NT$1,580）',
+    url: 'https://www.trusteebio.com.tw/products/lagom-cellus-aqualane-serum',
+    info: '添加雙重水潤胜肽，提升肌膚活力，改善粗糙又乾澀的肌膚，深入肌膚底層，感受深層保水及營養。塗抹時帶來水潤光澤卻不黏膩，肌膚清爽不負擔。官網頁面沒有寫明確的使用步驟/用量。'
+  },
+  {
+    brand: 'LAGOM', name: '煥活保濕精華水 200mL', price: 'NT$830（原價NT$1,180）',
+    url: 'https://www.trusteebio.com.tw/products/lagom-cellus-revive-essence-toner-200ml',
+    info: '同時滿足保濕、滋潤及緊緻，透過3重玻尿酸複合成分打造保濕系統，質地如濃縮精華，越塗越柔順，持續為肌膚補充水分不乾裂。通過人體皮膚低刺激測試。官網頁面沒有寫明確的使用步驟/用量。'
+  },
+  {
+    brand: 'LAGOM', name: '晚安極密泡沫潔顏乳 120mL', price: 'NT$420（原價NT$650）',
+    url: 'https://www.trusteebio.com.tw/products/lagom-cellup-micro-foam-cleanser',
+    info: '晚間卸妝／洗臉用洗面乳。綿密細緻的微分子泡沫，柔滑滲透毛孔，溫和卸除彩妝殘留、空氣微塵與多餘皮脂；深層潔淨同時注入高保濕修護能量，強化肌膚屏障、舒緩乾燥疲憊，為夜間保養做準備。官網另有「敏感肌 PH新平衡修護」版本（同系列不同款），若客人特別問敏感肌版本，建議客服人員跟品牌方/內部資料確認差異，官網該款產品頁目前無法確認內容。'
+  },
+  {
+    brand: 'LAGOM', name: '早安保濕潔顏水凝露 170mL', price: 'NT$450（原價NT$680）',
+    url: 'https://www.trusteebio.com.tw/products/lagom-cellup-gel-to-water-cleanser',
+    info: 'Olive Young潔顏系列No.1熱銷推薦，訴求晨間專用洗面乳。透明凝露質地，無泡沫、溫和不刺激，輕柔洗去夜間堆積的皮脂與髒污。添加獨家保濕成分AQUALICIA®，深入肌底啟動天然「水通道蛋白」。官網頁面沒有寫明確的使用步驟/用量。'
+  },
+  {
+    brand: "Angel's Liquid", name: '穀胱甘肽700V 肌光白修護面霜 50ml', price: 'NT$880（原價NT$1,150）',
+    url: 'https://www.trusteebio.com.tw/products/angels-liquid-glutathione-niacinamide-700v-cream',
+    info: '穀胱甘肽700mg＋菸鹼醯胺20,000ppm，主打高效鎖白保濕。添加角鯊烷與腺苷，強化肌膚屏障、抗皺緊實。官網說明「作為日常保養最後一步」使用，即保養流程的最後一道。官網頁面沒有寫明確用量。'
+  },
+  {
+    brand: "Angel's Liquid", name: '穀胱甘肽700V 肌光白安瓶精華 30ml', price: 'NT$980（原價NT$1,280）',
+    url: 'https://www.trusteebio.com.tw/products/angels-liquid-glutathione-niacinamide-700v-ampoule',
+    info: '訴求「7天密集美白安瓶」。穀胱甘肽700mg＋菸鹼醯胺50,000ppm（此系列中濃度最高），高濃度安瓶精華，集中淡化斑點、提亮暗沉膚色；富含腺苷，提升肌膚彈性與細緻度。官網頁面沒有寫明確用法用量，屬安瓶精華一般用法（保養流程中精華液步驟使用）。'
+  },
+  {
+    brand: "Angel's Liquid", name: '穀胱甘肽700V 肌光露 150ml', price: 'NT$780（原價NT$1,050）',
+    url: 'https://www.trusteebio.com.tw/products/angels-liquid-glutathione-niacinamide-700v-essence',
+    info: '精華水級的肌光導入，訴求「一瓶專為敏感暗沉肌設計的高機能精華水」。穀胱甘肽700mg＋菸鹼醯胺20,000ppm，質地輕盈吸收快，穩定肌膚同時保濕舒緩。官網明確寫「通過皮膚刺激測試，敏感肌安心使用」。官網頁面沒有寫明確用法用量，屬精華水一般用法（化妝水後、精華前使用）。'
+  }
+];
+
+// 以下產品在蒐集當下（2026-08-14）官網查無產品頁（可能已下架/售完下架/改版），若客人問到請提醒客服人員跟品牌方確認現況，不要說「資料庫沒有」：
+// 【發光瓶】Kira 維他命C發光精華（BFFECT）；HEALIC 一抹爆水 X PDRN防曬；SMIB InnaBi 珊瑚鈣新生頭皮賦活精華；LAGOM 晚安極密泡沫潔顏乳（敏感肌 PH新平衡修護）版本
+
 let activeCat = CATEGORIES[0].id;
 let chatHistory = []; // AI 問答的對話記錄（僅存在記憶體中，重新整理頁面就會清空）
 
@@ -1083,6 +1238,23 @@ function buildRelevantKnowledgeBaseText(queryText, limit){
   return top.map((r, i) => `${i+1}. 【${r.cat.name}${r.item.situation ? '/' + r.item.situation : ''}】\nQ: ${r.item.q}\nA: ${truncateText(r.item.a, 350)}`).join('\n\n');
 }
 
+// 用同一套相似度演算法，挑跟客服打的這句話最相關的幾筆「官網產品資料」給AI參考
+function buildRelevantProductText(queryText, limit){
+  const kwNorm = normText(queryText);
+  const scored = [];
+  OFFICIAL_PRODUCTS.forEach(p => {
+    const ns = fieldScore(kwNorm, p.name) * 4;
+    const bs = fieldScore(kwNorm, p.brand) * 2;
+    const is = fieldScore(kwNorm, p.info) * 1;
+    const score = ns + bs + is;
+    if(score > 0) scored.push({ p, score });
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, limit);
+  if(top.length === 0) return '';
+  return top.map((r, i) => `${i+1}. 【${r.p.brand}】${r.p.name}（${r.p.price}）\n${r.p.info}`).join('\n\n');
+}
+
 function buildKnowledgeBaseText(){
   return CATEGORIES.map(cat => {
     const lines = cat.items.map((item, i) => `${i+1}. Q: ${item.q}${item.situation ? '（情況：'+item.situation+'）' : ''}\nA: ${item.a}`).join('\n\n');
@@ -1125,9 +1297,15 @@ async function sendChat(){
 7. 絕對不能自己發明或衍生資料裡沒有出現過的產品名稱（例如資料只提到「【修修瓶】」，就不能自己講出「修修水」「修修乳」這種資料沒寫過、用類推方式編出來的產品名字）。回覆中提到的每一個產品名稱，都必須是資料裡逐字出現過的名稱，如果不確定某個需求該推薦哪個產品，或資料沒有直接對應的推薦，就用自然的口吻跟客人說「這部分我們再幫您確認合適的產品後回覆您」，並用一行提醒客服人員要跟品牌方/專人確認，不要自己猜測或硬湊一個推薦。
 8. 絕對不能自己編造任何具體的日期、時間、數字、百分比、期限（例如「每個月15號」「7個工作天」「9折」等），除非這個數字是提供的資料裡逐字寫出來的。如果客人問的是確切時間點但資料沒有明確給出日期（例如下一檔團購、補貨時間），就依照資料裡的引導方式回覆（通常是請客人關注官方通路、暫不承諾確切時間），絕對不要自己掰一個聽起來合理的日期或數字出來，這種編造出來的具體資訊比籠統的錯誤更容易誤導客人。
 9.【非常重要，關於用詞】你產出的文字是客服人員要直接複製貼給客人看的最終回覆，絕對不能出現「資料庫」「QA」「知識庫」「系統」「內部資料」這類內部作業用詞，也不要提到你是依據什麼資料或系統查詢、比對出這個答案的。要讓內容讀起來就像客服人員自己本來就懂這些資訊，自然地說出來，不要讓客人感覺到背後有一個資料庫在查詢或比對。
+10. 除了客服QA之外，下面也會附上幾筆「官網產品資料」（產品描述、成分、使用方法等），這是官網上公開寫的內容，可以拿來補充回答產品相關的問題（例如成分、使用方法、適合膚質、價格）。這份資料跟QA資料是同一等級的事實依據，一樣不能自己加油添醋：如果官網資料裡寫「沒有寫明確的使用方法」，就不要自己發明一個使用方法出來，可以老實跟客人說目前沒有更細節的使用說明，建議客人依產品包裝上的指示使用，或再跟客服確認。如果QA資料和官網產品資料兩邊講的內容有衝突（例如價格不一樣），以QA資料（客服內部資訊）優先，因為那通常更新更即時。
 
 以下是跟目前這段對話最相關的幾筆參考資料（給你作為事實依據，不是要你照抄的稿子）：
-${buildRelevantKnowledgeBaseText(recentUserTurns, 6)}`;
+
+【客服QA】
+${buildRelevantKnowledgeBaseText(recentUserTurns, 6)}
+
+【官網產品資料】
+${buildRelevantProductText(recentUserTurns, 4) || '（這句話目前比對不到明確相關的官網產品，不用勉強提產品名稱）'}`;
 
   try{
     const res = await fetch(CHAT_PROXY_URL, {
