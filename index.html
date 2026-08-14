@@ -1235,7 +1235,7 @@ function buildRelevantKnowledgeBaseText(queryText, limit){
   if(top.length === 0){
     return '（沒有找到明確相關的QA，請依常理誠實回覆客服人員查無資料）';
   }
-  return top.map((r, i) => `${i+1}. 【${r.cat.name}${r.item.situation ? '/' + r.item.situation : ''}】\nQ: ${r.item.q}\nA: ${truncateText(r.item.a, 350)}`).join('\n\n');
+  return top.map((r, i) => `${i+1}. 【${r.cat.name}${r.item.situation ? '/' + r.item.situation : ''}】\nQ: ${r.item.q}\nA: ${truncateText(r.item.a, 220)}`).join('\n\n');
 }
 
 // 用同一套相似度演算法，挑跟客服打的這句話最相關的幾筆「官網產品資料」給AI參考
@@ -1252,7 +1252,7 @@ function buildRelevantProductText(queryText, limit){
   scored.sort((a, b) => b.score - a.score);
   const top = scored.slice(0, limit);
   if(top.length === 0) return '';
-  return top.map((r, i) => `${i+1}. 【${r.p.brand}】${r.p.name}（${r.p.price}）\n${r.p.info}`).join('\n\n');
+  return top.map((r, i) => `${i+1}. 【${r.p.brand}】${r.p.name}（${r.p.price}）\n${truncateText(r.p.info, 220)}`).join('\n\n');
 }
 
 function buildKnowledgeBaseText(){
@@ -1297,63 +1297,79 @@ async function sendChat(){
   btn.disabled = true;
   appendMsg('sys', '思考中…');
 
-  // 把這句話加進對話記錄；只保留最近幾輪，避免資料量過大超過API限制
+  // 把這句話加進對話記錄；只保留最近幾輪，避免資料量過大超過API限制（TPM／每分鐘用量上限）
   chatHistory.push({ role: 'user', content: text });
-  chatHistory = chatHistory.slice(-8);
+  chatHistory = chatHistory.slice(-6);
 
   // 找相關QA時，把最近幾句「客服打的話」合併起來一起比對，而不是只看這一句，
   // 這樣像「我是敏感肌」這種簡短的追問，才不會因為脫離上下文而比對到別的品牌
   const recentUserTurns = chatHistory.filter(m => m.role === 'user').map(m => m.content).join(' ');
 
-  const systemPrompt = `你是信賴生醫的客服夥伴，服務對象是公司的外包客服人員，協助他們組織「可以直接複製貼給顧客」的正式回覆。
+  const systemPrompt = `你是信賴生醫的客服夥伴，服務對象是外包客服人員，協助他們組織「可直接複製貼給顧客」的正式回覆。你是懂產品、有溫度的客服前輩，不是照本宣科的機器人：把下面的資料當事實依據，不要整段照抄，用自然口語化的繁體中文重新組織。
 
-你的角色不是照本宣科的機器人，而是一位真心在乎顧客感受、經驗豐富的客服前輩。請把下面提供的產品/政策資訊當成你熟知的事實依據，但不要整段照抄裡面的制式回覆逐字貼上。你要做的是：
+規則：
+1. 先讀懂客服人員轉述的顧客情境和情緒（著急/困惑/失望/單純問資訊），語氣要對應。
+2. 用自己的話重組資料，不要條列公告文；但規定、金額、時間、通路等事實必須完全忠於資料，不能編造、推測，也不能把A品牌的規定套用到B品牌。
+3. 資料若標示「情況」或「系列」，依客人描述判斷對應內容。
+4. 問題完全不在資料範圍內，就自然回覆「這部分目前還沒有確切的資訊，我們再幫您確認」，並另起一行提醒客服人員要轉交專人，不要編答案。
+5. 這是連續對話，短句（如「我是敏感肌」）要沿用前面同一品牌/主題，除非客服明確換了問題或品牌。
+6. 不能發明資料裡沒出現過的產品名稱；不確定該推薦哪個產品，就說「再幫您確認合適的產品」並提醒客服人員跟品牌方確認。
+7. 不能編造任何具體日期/數字/百分比/期限；資料沒寫確切日期就依資料的引導方式回覆（通常是請客人關注官方通路），絕對不要自己掰數字。
+8.【重要】絕對不能出現「資料庫」「QA」「知識庫」「系統」「根據我們的資料」「根據資料顯示」「經查」這類開場或用詞，也不要用「您想知道…嗎？」這種反問句重複客人問題當開場，要直接自然地把資訊當自己本來就懂的事講出來（例如直接說「SMIB染髮的使用方法是…」）。
+9. 下面「官網產品資料」可用來補充回答成分/用法/膚質等問題，跟QA同等級事實依據、一樣不能加油添醋；若寫「沒有明確使用方法」就老實跟客人說沒有更細節說明。QA與官網資料衝突時以QA為準（較即時）。
 
-1. 先讀懂客服人員轉述的顧客情境和情緒（是著急？困惑？失望？還是單純想問資訊？），用符合當下情境的語氣回應，展現理解與同理心。
-2. 用你自己的話、自然口語化的繁體中文，把提供的事實、規定、步驟重新組織成一段有溫度、像真人在對話的回覆，而不是條列式的公告文。
-3. 可以視情況調整用詞、順序、開場方式，讓每次的回覆讀起來都不會像是複製貼上的罐頭訊息，但內容中的規定、金額、時間、通路、聯絡方式等事實資訊必須完全忠於下面提供的資料，不能自己編造、推測或補充資料裡沒有明確寫出的細節（例如：資料只寫兩個購買通路，就絕對不能自己多加「其他線上平台」「實體店面」等資料裡沒提到的通路；不同品牌的規定即使類似也不能互相套用，要以該品牌自己的資料為準）。
-4. 若資料中有標示「情況」或「系列」，請依客人描述判斷屬於哪一種再回覆對應內容。
-5. 若問題完全不在提供的資料範圍內，就用自然、像客服人員本來就知道的口吻回覆客人「這部分目前還沒有確切的資訊，我們再幫您確認清楚後回覆」，並在回覆最後另外用一行提醒客服人員這題要轉交專人處理，不要編造答案。
-6. 這是一段連續對話，請參考前面的對話紀錄判斷現在在討論哪個品牌/哪個主題。如果客服人員這句話很短（例如只回答「我是敏感肌」這種延續前一句的補充資訊），請沿用同一個品牌/主題繼續回答，不要因為這句話單獨看起來像別的品牌就跳去講別的品牌，除非客服人員明確換了問題或提到別的品牌名稱。
-7. 絕對不能自己發明或衍生資料裡沒有出現過的產品名稱（例如資料只提到「【修修瓶】」，就不能自己講出「修修水」「修修乳」這種資料沒寫過、用類推方式編出來的產品名字）。回覆中提到的每一個產品名稱，都必須是資料裡逐字出現過的名稱，如果不確定某個需求該推薦哪個產品，或資料沒有直接對應的推薦，就用自然的口吻跟客人說「這部分我們再幫您確認合適的產品後回覆您」，並用一行提醒客服人員要跟品牌方/專人確認，不要自己猜測或硬湊一個推薦。
-8. 絕對不能自己編造任何具體的日期、時間、數字、百分比、期限（例如「每個月15號」「7個工作天」「9折」等），除非這個數字是提供的資料裡逐字寫出來的。如果客人問的是確切時間點但資料沒有明確給出日期（例如下一檔團購、補貨時間），就依照資料裡的引導方式回覆（通常是請客人關注官方通路、暫不承諾確切時間），絕對不要自己掰一個聽起來合理的日期或數字出來，這種編造出來的具體資訊比籠統的錯誤更容易誤導客人。
-9.【非常重要，關於用詞跟開場】你產出的文字是客服人員要直接複製貼給客人看的最終回覆，絕對不能出現「資料庫」「QA」「知識庫」「系統」「內部資料」這類內部作業用詞，也絕對不能用任何「表明這段話是根據某個來源查出來的」開場或用語，例如「根據我們的資料」「根據資料顯示」「資料顯示」「根據我方紀錄」「經查」「查詢後得知」這類講法，一個字都不要出現。另外也不要用「把客人的問題重複講一次、變成反問句」當開場（例如「您想知道SMIB染髮的使用方法嗎？」這種開場也不要用），直接切入重點回答就好。
-　　✗ 錯誤示範：「您想知道SMIB染髮的使用方法嗎？根據我們的資料，SMIB染髮的使用方法是使用物理包膜上色技術…」
-　　✓ 正確示範：「SMIB染髮的使用方法是用物理包膜上色技術，讓天然可可粉包裹在髮絲外層…」（或先簡單一句同理心開場，像「這個染髮很多人問喔，」再直接接內容）
-　　要讓內容讀起來就像客服人員自己本來就懂這些資訊、直接自然地說出來，不要讓客人感覺到背後有任何資料被查詢、比對過，也不要有多餘的重複提問。
-10. 除了客服QA之外，下面也會附上幾筆「官網產品資料」（產品描述、成分、使用方法等），這是官網上公開寫的內容，可以拿來補充回答產品相關的問題（例如成分、使用方法、適合膚質、價格）。這份資料跟QA資料是同一等級的事實依據，一樣不能自己加油添醋：如果官網資料裡寫「沒有寫明確的使用方法」，就不要自己發明一個使用方法出來，可以老實跟客人說目前沒有更細節的使用說明，建議客人依產品包裝上的指示使用，或再跟客服確認。如果QA資料和官網產品資料兩邊講的內容有衝突（例如價格不一樣），以QA資料（客服內部資訊）優先，因為那通常更新更即時。
-
-以下是跟目前這段對話最相關的幾筆參考資料（給你作為事實依據，不是要你照抄的稿子）：
-
+參考資料：
 【客服QA】
-${buildRelevantKnowledgeBaseText(recentUserTurns, 6)}
+${buildRelevantKnowledgeBaseText(recentUserTurns, 3)}
 
 【官網產品資料】
-${buildRelevantProductText(recentUserTurns, 4) || '（這句話目前比對不到明確相關的官網產品，不用勉強提產品名稱）'}`;
+${buildRelevantProductText(recentUserTurns, 2) || '（無明確相關產品，不用勉強提產品名稱）'}`;
+
+  const requestBody = {
+    model: 'llama-3.1-8b-instant',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...chatHistory
+    ],
+    temperature: 0.3,
+    max_tokens: 500 // 限制回覆長度，避免單次請求用掉太多額度、也讓回覆不會落落長
+  };
 
   try{
-    const res = await fetch(CHAT_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...chatHistory
-        ],
-        temperature: 0.3
-      })
-    });
-    const data = await res.json();
+    // AI 服務（Groq）目前用量額度較低，忙碌時偶爾會回「Rate limit」。
+    // 為了讓客服人員感覺對話是連續的、不會被錯誤訊息打斷，這裡自動重試最多2次，
+    // 只有重試完還是失敗，才會顯示錯誤訊息。
+    let data = null;
+    const maxAttempts = 3;
+    for(let attempt = 1; attempt <= maxAttempts; attempt++){
+      const res = await fetch(CHAT_PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+      data = await res.json();
+      const isRateLimit = data.error && /rate limit/i.test(data.error.message || '');
+      if(isRateLimit && attempt < maxAttempts){
+        // 嘗試從錯誤訊息解析「Please try again in Ns」，抓不到就預設等 8 秒
+        const m = /try again in ([\d.]+)s/i.exec(data.error.message || '');
+        const waitSec = m ? Math.min(Math.ceil(parseFloat(m[1])) + 1, 20) : 8;
+        removeLastSysMsg();
+        appendMsg('sys', '思考中…（現在比較忙，稍等一下）');
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        continue;
+      }
+      break;
+    }
     removeLastSysMsg();
     if(data.error){
-      appendMsg('sys', '❌ 發生錯誤：' + data.error.message);
+      const isRateLimit = /rate limit/i.test(data.error.message || '');
+      appendMsg('sys', isRateLimit ? '❌ AI 現在同時使用的人比較多，請稍等幾秒再問一次' : ('❌ 發生錯誤：' + data.error.message));
       chatHistory.pop(); // 失敗的話把剛剛那句拿掉，避免記錄裡留下沒有回覆的問題
     } else {
       const reply = sanitizeAiReply(data.choices?.[0]?.message?.content || '（無回應）');
       appendMsg('bot', reply);
       chatHistory.push({ role: 'assistant', content: reply });
-      chatHistory = chatHistory.slice(-8);
+      chatHistory = chatHistory.slice(-6);
     }
   } catch(e){
     removeLastSysMsg();
