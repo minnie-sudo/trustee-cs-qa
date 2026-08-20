@@ -135,6 +135,20 @@
   .apikey-status.ok{color:#2e8b57;}
   .apikey-status.missing{color:#c0392b;}
 
+  /* Order lookup */
+  .order-search-row{display:flex;gap:8px;margin-bottom:18px;}
+  .order-search-row input{flex:1;padding:12px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;}
+  .order-search-row button{padding:0 20px;border:none;border-radius:10px;background:var(--pink);color:#fff;font-weight:600;cursor:pointer;}
+  .order-search-row button:disabled{background:#ddb9c4;cursor:not-allowed;}
+  .order-result{border:1px solid var(--border);border-radius:12px;padding:18px 20px;background:var(--pink-light);}
+  .order-result .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+  .order-result .row:last-child{border-bottom:none;}
+  .order-result .row .label{color:var(--ink-soft);}
+  .order-result .row .value{font-weight:600;color:var(--ink);}
+  .order-badge{display:inline-block;font-size:12px;padding:3px 10px;border-radius:20px;background:var(--rose);color:var(--pink-dark);font-weight:600;}
+  .order-error{color:#c0392b;font-size:13px;padding:14px;background:#fdecec;border-radius:10px;}
+  .order-note{font-size:11px;color:var(--ink-soft);margin-top:12px;line-height:1.6;}
+
   footer.foot{text-align:center;font-size:11px;color:var(--ink-soft);padding:24px 0;}
 
   @media (max-width: 700px){
@@ -161,6 +175,7 @@
   <div class="tabs">
     <button class="tab-btn active" id="tabBtnQa" onclick="switchTab('qa')">📋 QA 查詢</button>
     <button class="tab-btn" id="tabBtnAi" onclick="switchTab('ai')">🤖 AI 問答</button>
+    <button class="tab-btn" id="tabBtnOrder" onclick="switchTab('order')">📦 訂單查詢</button>
   </div>
 
   <main>
@@ -190,6 +205,20 @@
         <input id="chatInput" type="text" placeholder="輸入客人的問題或情境，例如：客人很不滿意想退貨" onkeydown="if(event.key==='Enter')sendChat();">
         <button id="chatSendBtn" onclick="sendChat()">送出</button>
       </div>
+    </section>
+
+    <!-- Order lookup panel -->
+    <section class="panel" id="panelOrder" style="display:none;">
+      <h3>訂單查詢</h3>
+      <div class="apikey-note">輸入客人提供的訂單號碼，查詢訂單狀態與物流資訊。為保護客人隱私，姓名／電話僅顯示部分遮蔽。</div>
+      <div class="apikey-status" id="orderProxyStatus"></div>
+
+      <div class="order-search-row">
+        <input id="orderInput" type="text" placeholder="輸入訂單號碼" onkeydown="if(event.key==='Enter')lookupOrder();">
+        <button id="orderSearchBtn" onclick="lookupOrder()">查詢</button>
+      </div>
+
+      <div id="orderResultBox"></div>
     </section>
   </main>
 
@@ -886,171 +915,6 @@ https://www.trusteebio.com.tw/pages/smib-color-change-shampoo-
 /* 合併：用於跨分類搜尋與依 id 查找 */
 const CATEGORIES = GENERAL_CATEGORIES.concat(BRAND_CATEGORIES);
 
-/* ============ 官網產品資料（2026-08-14 從 trusteebio.com.tw 各產品頁蒐集） ============
-   用途：讓 AI 問答在回覆客人時，除了客服QA之外，也能參考官網公開的產品描述/使用方法/成分。
-   注意：以下內容都是官網頁面上實際寫出來的文字，沒有寫的欄位就留空，AI 不會、也不該自己編。
-   官網改版或更新產品內容後，這份資料需要重新蒐集才會同步，不是即時抓取。 */
-const OFFICIAL_PRODUCTS = [
-  {
-    brand: 'BFFECT', name: '【戰痘瓶】Acno 敏感肌抗痘精華', price: 'NT$720',
-    url: 'https://www.bffect.com/products/acno-anti-acne-serum',
-    info: '無酸抗痘保養，敏弱肌也可以安心使用，成分含菸鹼醯胺(維他命B3)、Zinc PCA、傳明酸等。使用方法：按壓一次再視膚況調整用量；臉部痘痘早晚清潔後塗抹於患處；身體痘痘（如背部、胸口）清潔後塗抹；預防性使用可全臉/全身塗抹；出油肌可用來替代乳液乳霜。適用膚質：各種膚質皆可，乾性肌膚建議只塗痘痘處。注意事項：孕期可使用；限外用途抹，避免接觸眼睛，如有不適請立即停用；使用前建議先於手肘內側做肌膚測試。'
-  },
-  {
-    brand: 'BFFECT', name: '【乖乖瓶】Calmer 高效修護精華', price: 'NT$690',
-    url: 'https://www.bffect.com/products/calmer-intense-soothing-serum',
-    info: '乾燥敏感肌的日常修護精華，舒緩泛紅、乾癢與脫屑不適，修護肌膚屏障、提升保濕力，成分含積雪草萃取物、角鯊烷、尿囊素、甘草酸鉀、蘆薈葉萃取等。使用方法：按壓一次再視膚況調整用量；臉部早晚清潔後塗抹（避開眼周），建議化妝水後、乳液乳霜前使用，出油肌可替代乳液；身體清潔後可用於身體肌膚。適用膚質：各種膚質，尤其適合乾癢泛紅敏感肌、怕厚重乳霜的油肌。注意事項：孕期可使用；白天建議搭配防曬；限外用途抹，避免接觸眼睛，如有不適請立即停用；使用前建議先於手肘內側做肌膚測試。'
-  },
-  {
-    brand: 'BFFECT', name: '【爆水瓶】2% 多重玻尿酸 + 1% 寡糖胺基酸', price: 'NT$520',
-    url: 'https://www.bffect.com/products/hyaluronic-acid-2-subliskin-1',
-    info: '保濕加倍，降低水分流失、維持肌膚彈性，成分含NASHA級大分子玻尿酸、專利小分子玻尿酸Hyalo-Oligo®、玻尿酸保濕因子HYALUFIX GL、寡糖胺基酸SUBLISKIN™ 1%（修護調理紋路）。使用方法：建議從一滴開始使用，再視膚況調整；早晚臉部清潔後塗抹（避開眼周），建議化妝水後、乳液乳霜前使用，出油肌可替代乳液乳霜；也可加1-2滴調入化妝水/乳液/乳霜/保養油一起用。適用膚質：乾性、中性、混合性肌膚，特別適合乾肌加強保濕、敏弱肌需要溫和保濕精華的人。注意事項：孕期可使用；限外用途抹，避免接觸眼睛；使用前建議先於手肘內側做肌膚測試。'
-  },
-  {
-    brand: 'BFFECT', name: '【10B修復瓶】10% 維他命B3 + 2% 淡紋四胜肽', price: 'NT$380',
-    url: 'https://www.bffect.com/products/10b3',
-    info: '啟動肌膚抗老修復力，恢復肌膚彈性，成分含10%菸鹼醯胺(維他命B3，強化屏障、修護肌膚、抗老淡紋、控油縮毛孔)、2% MATRIXYL™ 3000胜肽(修復肌膚、撫紋、提亮彈潤)。使用方法：建議從一滴開始使用，再視膚況調整；早晚清潔後、乳液乳霜前使用（避開眼周）。適用膚質：乾性、中性、混合性肌膚，特別適合乾肌保濕、敏弱肌。注意事項：孕期可使用；使用前建議先於手肘內側做肌膚測試；不建議與A醇類、高濃度維他命C或酸類產品同時使用（怕破壞酸鹼值影響效果）；瓶蓋處若有白色結晶屬正常現象。'
-  },
-  {
-    brand: 'BFFECT', name: '【水水瓶】2% 多重玻尿酸 + 1% Na-PCA', price: 'NT$450',
-    url: 'https://www.bffect.com/products/hyaluronic-acid-2-na-pca-1',
-    info: '熱銷款，舒緩乾燥、水嫩光澤、質地清爽，成分含NASHA級大分子玻尿酸、專利小分子玻尿酸Hyalo-Oligo®、陽離子玻尿酸Hyaloveil®-P、1% Na-PCA天然保濕因子。使用方法：建議取1-2滴塗抹，再視膚況調整；早晚臉部清潔後塗抹（避開眼周），建議化妝水後、乳液乳霜前使用。適用膚質：油性、中性、混合性肌膚，也適合乾肌加強保濕與敏弱肌。注意事項：孕期可使用；限外用途抹，避免接觸眼睛；使用前建議先於手肘內側做肌膚測試。'
-  },
-  {
-    brand: 'BFFECT', name: '【修修瓶】2%傳明酸美白精華', price: 'NT$990',
-    url: 'https://www.bffect.com/products/tranexamic-acid-2-whitening-serum',
-    info: '美白精華，成分含2%傳明酸、2%α熊果素（皆為衛福部核可美白成分）、維他命B3(改善暗沉不均)、杏仁酸（改善暗沉緊緻）等。使用方法：臉部早晚清潔後適量塗抹於臉部或暗沉處（避開眼周）；頸部/身體清潔後也可使用。適用膚質：各種膚質，敏弱肌建議先小範圍局部測試。注意事項：孕期可使用；開封後建議3個月內用完；白天使用後建議加強防曬或深色衣物遮蔽；避免與高濃度維他命C、A醇類、酸類、維他命B3類產品同時使用；使用前建議先於手肘內側做肌膚測試。'
-  },
-  {
-    brand: 'BFFECT', name: '【小橘管】13%杜鵑花酸抗痘精華乳', price: 'NT$880',
-    url: 'https://www.bffect.com/products/azelaic-acid-13-anti-acne-lotion',
-    info: '抗痘精華乳，成分含13%杜鵑花酸（調理粉刺、明亮肌膚）、琥珀酸（通暢毛孔、緊緻毛孔）、葡萄糖酸內酯（細緻肌膚）、IPMP繖花醇與感光素201（改善調理痘痘）。使用方法：臉部早晚清潔後適量塗抹於臉部或暗沉處（避開眼周）；頸部/身體清潔後也可使用於頸部或身體肌膚。適用膚質：各種膚質，敏弱肌建議先小範圍局部測試，非常乾的膚質不建議使用。注意事項：孕期可使用；開封後建議3個月內用完；白天使用後建議加強防曬或深色衣物遮蔽；避免與高濃度維他命C、A醇類、其他酸類、菸鹼醯胺(維他命B3)產品同時使用；使用前建議先於手肘內側做肌膚測試。'
-  },
-  {
-    brand: 'trustee（Solution系列）', name: '{Solution}30%胺基酸保濕洗面乳', price: 'NT$480',
-    url: 'https://www.trusteebio.com.tw/products/trustee＿solution30-gentle-cleasing',
-    info: '溫和洗淨肌膚，不過度清潔，洗後肌膚清爽不緊繃、柔嫩保濕。成份單純，低刺激、低過敏原料，不含皂基、酒精、色素、香料，味道不刺鼻，起泡簡單易沖淨。官網頁面沒有寫明確的使用步驟/頻率。'
-  },
-  {
-    brand: 'trustee（Solution系列）', name: '{Solution}10%菸鹼醯胺修護解方精華乳', price: 'NT$990',
-    url: 'https://www.trusteebio.com.tw/products/solution-10-niacinamide-repair-lotion',
-    info: '內容量：50ml。原產地：台灣。使用方法：取3至5滴於解方精華後使用於臉部或頸部，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
-  },
-  {
-    brand: 'trustee（Solution系列）', name: '{Solution}5%菸鹼醯胺抗痘解方精華乳', price: 'NT$990',
-    url: 'https://www.trusteebio.com.tw/products/solution-5-niacinamide-acne-purifying-lotion',
-    info: '內容量：50ml。原產地：台灣。使用方法：取3至5滴於解方精華後使用於臉部或頸部，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
-  },
-  {
-    brand: 'trustee（Solution系列）', name: '{Solution}5%杏仁酸抗痘解方精華', price: 'NT$920',
-    url: 'https://www.trusteebio.com.tw/products/solution-mandelic-acid-acne-purifying-serum',
-    info: '內容量：30ml。原產地：台灣。使用方法：清潔過後，取3-5滴均勻塗抹在臉部和頸部，可接續使用保濕乳或保濕霜，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
-  },
-  {
-    brand: 'trustee（Solution系列）', name: '{Solution}10%菸鹼醯胺修護解方精華', price: 'NT$920',
-    url: 'https://www.trusteebio.com.tw/products/solution-10-niacinamide-repair-serum',
-    info: '內容量：30ml。使用方法：清潔過後，取3-5滴均勻塗抹在臉部和頸部，可接續使用保濕乳或保濕霜，每日可使用1-2次，建議對敏感皮膚進行使用前的皮膚敏感測試（patch test），本產品不含香料。保存方式：放置於陰涼乾燥處，避免陽光直射，保存期限36個月，並放置於兒童不易取得處。'
-  },
-  {
-    brand: 'HEALIC', name: '水潤保濕防曬乳 50g/條', price: 'NT$890',
-    url: 'https://www.trusteebio.com.tw/products/healic-healic-uv-defence-watery-sunscreen-50g',
-    info: 'SPF50+ PA++++。清透保濕、高效防護、海洋友善配方。奶油質地貼合不黏膩，保濕同時穩定膚況，全天對抗紫外線與藍光傷害。美白・抗皺・抗UV三效合一，添加低分子膠原蛋白與PDRN。通過敏感肌與眼周刺激測試。官網頁面沒有寫明確的使用步驟/用量。'
-  },
-  {
-    brand: 'HEALIC', name: '粉嫩亮膚防曬乳 50g/條', price: 'NT$890',
-    url: 'https://www.trusteebio.com.tw/products/healic-healic-uv-defence-tone-up-sunscreen-50g',
-    info: 'SPF50+ PA++++，帶妝前修飾膚色效果。質地柔滑如奶霜，一抹均勻膚色、自然提亮不死白。美白・抗皺・抗UV三效合一，添加低分子膠原蛋白與PDRN。通過敏感肌與眼周刺激測試，海洋友善配方。官網頁面沒有寫明確的使用步驟/用量。'
-  },
-  {
-    brand: 'HEALIC', name: '水潤亮白爽膚面膜 5片/盒', price: 'NT$980',
-    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-mask',
-    info: '整瓶美白精華液濃縮在一張面膜中，面料較厚。含椰子果肉萃取COCOSIL™抗氧化保濕；核心成分「傳明酸」（Toning Effector™，濃度20,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；積雪草提取物鎮靜肌膚。全膚質適用，通過德國德瑪低刺激認證，敏感肌膚也能使用。官網頁面沒有寫明確敷多久/一週幾次。'
-  },
-  {
-    brand: 'HEALIC', name: '水潤亮白爆水面霜 60g/條', price: 'NT$1,280',
-    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-cream',
-    info: '美白+保濕+舒緩三合一，軟膏質地。核心成分「傳明酸」（Toning Effector™，濃度20,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；另含Para-coumaric Acid植物性美白成分（幾乎無刺激）、積雪草萃取物、羥基積雪草苷（修護敏感肌）、D-泛醇（保濕補水）。全膚質適用，通過德國德瑪低刺激認證，敏感肌膚也能使用。'
-  },
-  {
-    brand: 'HEALIC', name: '水潤亮白爽膚精華液 50ml/瓶', price: 'NT$1,580',
-    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-ampoule',
-    info: '高濃度美白精華，訴求改善雀斑和瑕疵。核心成分「傳明酸」（Toning Effector™，全系列中濃度最高，達70,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；另含沙棘果提取物（維生素C是檸檬30倍以上）、甘草提取物（阻斷黑色素合成）、蜂膠複合物、維生素複合物。全膚質適用，通過德國德瑪低刺激認證，敏感肌膚也能使用。'
-  },
-  {
-    brand: 'HEALIC', name: '水潤亮白爽膚棉 70片/盒', price: 'NT$1,180',
-    url: 'https://www.trusteebio.com.tw/products/healic-toning-active-pad',
-    info: '訴求「一擦二敷」：先當化妝水棉片擦拭老廢角質，也可敷在臉上當簡易面膜，建議睡前/妝前使用。U型棉片設計貼合眼周。核心成分「傳明酸」（Toning Effector™，濃度10,000ppm）無反黑副作用，不限早晚、24小時無負擔使用；另含沙棘果提取物等美白成分。天然人造絲纖維，不易起球。'
-  },
-  {
-    brand: '23YEARSOLD', name: '心葉淨透遮瑕膏（各色號）', price: 'NT$399（原價NT$570）',
-    url: 'https://www.trusteebio.com.tw/products/23yearsold-derma-thin-concealer-no25-1-1-1',
-    info: '日本Qoo10遮瑕類銷售冠軍，藥局研發，訴求輕薄又高遮瑕的「修護型遮瑕」，抗汗不易脫妝、溫和不刺激。富含28,000ppm心葉萃取物助於肌膚再生及修護；添加積雪草萃取物和專利成分SWEETONE舒緩泛紅與敏感肌膚。通過低刺激與不阻塞毛孔測試，敏感肌、痘痘肌也能安心使用。官網有多種色號（如5Y焦糖麥色、2.5N暖陽裸膚、0.5P粉潤米膚等），使用方法/膚質適用性各色號皆相同，差別只在顏色。'
-  },
-  {
-    brand: '23YEARSOLD', name: '心葉淨透氣墊粉餅（各色號）', price: 'NT$649（原價NT$750）',
-    url: 'https://www.trusteebio.com.tw/products/23yearsold-derma-thin-heartleaf-cushion-no23',
-    info: '韓國Ably底妝類銷售冠軍，藥局研發，訴求輕薄又高遮瑕的「修護型氣墊」，輕拍即可完成遮瑕＋修護舒緩。富含10,000ppm心葉萃取物助於肌膚再生及修護。通過低刺激與不阻塞毛孔測試，敏感肌、痘痘肌也能安心使用。官網有多種色號（如23號自然米膚、21號自然象牙、19號明亮米膚等），使用方法/膚質適用性各色號皆相同，差別只在顏色。'
-  },
-  {
-    brand: 'SMIB', name: '1000億乳酸菌 強健髮根養護洗髮精', price: 'NT$770（原價NT$990）',
-    url: 'https://www.trusteebio.com.tw/products/smib-1000億乳酸菌-強健髮根養護洗髮精',
-    info: '專利益生菌添加，穩定＆養護頭皮，從根本照顧髮的健康。宣稱頭皮出油有感改善83.9%，洗後不乾澀（保濕配方），0矽靈添加，強健髮根。含20種天然提取物和植物肽成分。官網頁面沒有寫明確的使用步驟/停留時間，屬一般洗髮精用法。'
-  },
-  {
-    brand: 'SMIB', name: '告別白髮 1000億乳酸菌染色洗髮精 200ml（柔棕黑／自然棕，預購商品）', price: 'NT$790（原價NT$1,000）',
-    url: 'https://www.trusteebio.com.tw/products/smib-ractobio-color-change-shampooblack',
-    info: '＊此為預購商品，預購18-30個工作天出貨。專為銀髮族、少年白設計，訴求在家輕鬆洗出黑髮。只要5分鐘，告別白髮＋染色＋修護一瓶搞定；使用一次，白髮遮蓋率宣稱高達80%。1000億乳酸菌＋HP-DCC複合專利，有效強健髮根；可可粉自然染色、無PPD、不刺激頭皮；含植物幹細胞、胡蘿蔔果實精華，強韌髮絲、均勻上色。官網頁面沒有寫明確的「塗抹後停留5分鐘」以外更細的步驟（例如是否需要戴手套、分區上色等），若客人問到這類細節建議提醒客服人員跟品牌方確認。'
-  },
-  {
-    brand: 'SMIB', name: '1000億乳酸菌 1分鐘奇蹟絲柔蛋白護髮素 400g', price: 'NT$790（原價NT$1,020）',
-    url: 'https://www.trusteebio.com.tw/products/smib--lactobio-1-minute-silk-hair-treatment',
-    info: '10重水解蛋白絲柔修護，訴求1分鐘內改善毛躁與乾枯。維他命B複合（菸鹼醯胺）＋乳酸菌，增厚髮絲、養護頭皮；添加天然護髮油，隔離熱傷害，恢復柔亮觸感。官網頁面沒有寫明確的使用步驟（一般護髮素用法：洗髮後塗抹、停留約1分鐘後沖洗）。'
-  },
-  {
-    brand: 'LAGOM', name: '深層保濕修護霜 60mL', price: 'NT$920（原價NT$1,380）',
-    url: 'https://www.trusteebio.com.tw/products/lagom-cellus-deep-moisture-cream-60ml',
-    info: '為乾燥肌膚深層補水，訴求越擦越水潤緊緻。添加獨家保濕成分AQUALICIA®及天然保濕因子（NMF），深入肌底啟動天然「水通道蛋白」，雙重鎖水系統，提升肌膚含水量與保水力，打造柔嫩細緻的肌膚。官網頁面沒有寫明確的使用步驟/用量。'
-  },
-  {
-    brand: 'LAGOM', name: '水潤多酚精華 50mL', price: 'NT$1,030（原價NT$1,580）',
-    url: 'https://www.trusteebio.com.tw/products/lagom-cellus-aqualane-serum',
-    info: '添加雙重水潤胜肽，提升肌膚活力，改善粗糙又乾澀的肌膚，深入肌膚底層，感受深層保水及營養。塗抹時帶來水潤光澤卻不黏膩，肌膚清爽不負擔。官網頁面沒有寫明確的使用步驟/用量。'
-  },
-  {
-    brand: 'LAGOM', name: '煥活保濕精華水 200mL', price: 'NT$830（原價NT$1,180）',
-    url: 'https://www.trusteebio.com.tw/products/lagom-cellus-revive-essence-toner-200ml',
-    info: '同時滿足保濕、滋潤及緊緻，透過3重玻尿酸複合成分打造保濕系統，質地如濃縮精華，越塗越柔順，持續為肌膚補充水分不乾裂。通過人體皮膚低刺激測試。官網頁面沒有寫明確的使用步驟/用量。'
-  },
-  {
-    brand: 'LAGOM', name: '晚安極密泡沫潔顏乳 120mL', price: 'NT$420（原價NT$650）',
-    url: 'https://www.trusteebio.com.tw/products/lagom-cellup-micro-foam-cleanser',
-    info: '晚間卸妝／洗臉用洗面乳。綿密細緻的微分子泡沫，柔滑滲透毛孔，溫和卸除彩妝殘留、空氣微塵與多餘皮脂；深層潔淨同時注入高保濕修護能量，強化肌膚屏障、舒緩乾燥疲憊，為夜間保養做準備。官網另有「敏感肌 PH新平衡修護」版本（同系列不同款），若客人特別問敏感肌版本，建議客服人員跟品牌方/內部資料確認差異，官網該款產品頁目前無法確認內容。'
-  },
-  {
-    brand: 'LAGOM', name: '早安保濕潔顏水凝露 170mL', price: 'NT$450（原價NT$680）',
-    url: 'https://www.trusteebio.com.tw/products/lagom-cellup-gel-to-water-cleanser',
-    info: 'Olive Young潔顏系列No.1熱銷推薦，訴求晨間專用洗面乳。透明凝露質地，無泡沫、溫和不刺激，輕柔洗去夜間堆積的皮脂與髒污。添加獨家保濕成分AQUALICIA®，深入肌底啟動天然「水通道蛋白」。官網頁面沒有寫明確的使用步驟/用量。'
-  },
-  {
-    brand: "Angel's Liquid", name: '穀胱甘肽700V 肌光白修護面霜 50ml', price: 'NT$880（原價NT$1,150）',
-    url: 'https://www.trusteebio.com.tw/products/angels-liquid-glutathione-niacinamide-700v-cream',
-    info: '穀胱甘肽700mg＋菸鹼醯胺20,000ppm，主打高效鎖白保濕。添加角鯊烷與腺苷，強化肌膚屏障、抗皺緊實。官網說明「作為日常保養最後一步」使用，即保養流程的最後一道。官網頁面沒有寫明確用量。'
-  },
-  {
-    brand: "Angel's Liquid", name: '穀胱甘肽700V 肌光白安瓶精華 30ml', price: 'NT$980（原價NT$1,280）',
-    url: 'https://www.trusteebio.com.tw/products/angels-liquid-glutathione-niacinamide-700v-ampoule',
-    info: '訴求「7天密集美白安瓶」。穀胱甘肽700mg＋菸鹼醯胺50,000ppm（此系列中濃度最高），高濃度安瓶精華，集中淡化斑點、提亮暗沉膚色；富含腺苷，提升肌膚彈性與細緻度。官網頁面沒有寫明確用法用量，屬安瓶精華一般用法（保養流程中精華液步驟使用）。'
-  },
-  {
-    brand: "Angel's Liquid", name: '穀胱甘肽700V 肌光露 150ml', price: 'NT$780（原價NT$1,050）',
-    url: 'https://www.trusteebio.com.tw/products/angels-liquid-glutathione-niacinamide-700v-essence',
-    info: '精華水級的肌光導入，訴求「一瓶專為敏感暗沉肌設計的高機能精華水」。穀胱甘肽700mg＋菸鹼醯胺20,000ppm，質地輕盈吸收快，穩定肌膚同時保濕舒緩。官網明確寫「通過皮膚刺激測試，敏感肌安心使用」。官網頁面沒有寫明確用法用量，屬精華水一般用法（化妝水後、精華前使用）。'
-  }
-];
-
-// 以下產品在蒐集當下（2026-08-14）官網查無產品頁（可能已下架/售完下架/改版），若客人問到請提醒客服人員跟品牌方確認現況，不要說「資料庫沒有」：
-// 【發光瓶】Kira 維他命C發光精華（BFFECT）；HEALIC 一抹爆水 X PDRN防曬；SMIB InnaBi 珊瑚鈣新生頭皮賦活精華；LAGOM 晚安極密泡沫潔顏乳（敏感肌 PH新平衡修護）版本
-
 let activeCat = CATEGORIES[0].id;
 let chatHistory = []; // AI 問答的對話記錄（僅存在記憶體中，重新整理頁面就會清空）
 
@@ -1065,8 +929,11 @@ window.addEventListener('DOMContentLoaded', () => {
 function switchTab(tab){
   document.getElementById('panelQa').style.display = tab === 'qa' ? 'block' : 'none';
   document.getElementById('panelAi').style.display = tab === 'ai' ? 'block' : 'none';
+  document.getElementById('panelOrder').style.display = tab === 'order' ? 'block' : 'none';
   document.getElementById('tabBtnQa').classList.toggle('active', tab === 'qa');
   document.getElementById('tabBtnAi').classList.toggle('active', tab === 'ai');
+  document.getElementById('tabBtnOrder').classList.toggle('active', tab === 'order');
+  if(tab === 'order') loadOrderProxyStatus();
 }
 
 /* ============ Sidebar ============ */
@@ -1245,26 +1112,7 @@ function buildRelevantKnowledgeBaseText(queryText, limit){
   if(top.length === 0){
     return '（沒有找到明確相關的QA，請依常理誠實回覆客服人員查無資料）';
   }
-  return top.map((r, i) => `${i+1}. 【${r.cat.name}${r.item.situation ? '/' + r.item.situation : ''}】\nQ: ${r.item.q}\nA: ${truncateText(r.item.a, 220)}`).join('\n\n');
-}
-
-// 用同一套相似度演算法，挑跟客服打的這句話最相關的幾筆「官網產品資料」給AI參考
-function buildRelevantProductText(queryText, limit){
-  const kwNorm = normText(queryText);
-  const scored = [];
-  OFFICIAL_PRODUCTS.forEach(p => {
-    const ns = fieldScore(kwNorm, p.name) * 4;
-    const bs = fieldScore(kwNorm, p.brand) * 2;
-    const is = fieldScore(kwNorm, p.info) * 1;
-    const score = ns + bs + is;
-    if(score > 0) scored.push({ p, score });
-  });
-  scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, limit);
-  if(top.length === 0) return '';
-  // 注意：這裡故意不把 r.p.price 放進去。官網產品資料是靜態快照，價格很容易跟官網現況對不上，
-  // 為了不讓AI講出可能已經過期的價格誤導客人，這份資料只給名稱／成分／用法，價格一律不提供給AI。
-  return top.map((r, i) => `${i+1}. 【${r.p.brand}】${r.p.name}\n${truncateText(r.p.info, 220)}`).join('\n\n');
+  return top.map((r, i) => `${i+1}. 【${r.cat.name}${r.item.situation ? '/' + r.item.situation : ''}】\nQ: ${r.item.q}\nA: ${truncateText(r.item.a, 350)}`).join('\n\n');
 }
 
 function buildKnowledgeBaseText(){
@@ -1272,27 +1120,6 @@ function buildKnowledgeBaseText(){
     const lines = cat.items.map((item, i) => `${i+1}. Q: ${item.q}${item.situation ? '（情況：'+item.situation+'）' : ''}\nA: ${item.a}`).join('\n\n');
     return `【分類：${cat.name}】\n${lines}`;
   }).join('\n\n');
-}
-
-// 保險機制：小型AI模型有時候即使被提示詞禁止，還是會習慣性講出「根據我們的資料」這類開場白，
-// 洩漏出「這是查資料查出來的」的感覺，讓回覆讀起來不像真人客服在說話。
-// 這裡在畫面顯示之前，用規則式的方式把這類殘留的開場白過濾掉，當作提示詞沒擋住時的最後一道防線。
-function sanitizeAiReply(text){
-  if(!text) return text;
-  let out = String(text);
-  const leakPatterns = [
-    /根據(我們|我方|本店|店家|公司)?(這邊)?的?(資料|紀錄|記錄)(庫)?(顯示|指出|表示)?[，,、]?\s*/g,
-    /依照(我們|我方)?(這邊)?的?(資料|紀錄|記錄)(顯示)?[，,、]?\s*/g,
-    /依據(我們|我方)?(這邊)?的?(資料|紀錄|記錄)(顯示)?[，,、]?\s*/g,
-    /經(過)?查(詢|證)?(後)?(得知|顯示)?[，,、]?\s*/g,
-    /查詢(後|資料後)?(得知|顯示)?[，,、]?\s*/g,
-    /(根據|依照|依據)(公司|品牌|官方)?(內部)?(資訊|說明|紀錄|記錄)[，,、]?\s*/g,
-    /(資料|紀錄|記錄)(庫)?(顯示|指出|表示)[，,、]?\s*/g,
-  ];
-  leakPatterns.forEach(re => { out = out.replace(re, ''); });
-  // 移除文字後，行首可能留下多餘的逗號或頓號，順手清掉
-  out = out.split('\n').map(line => line.replace(/^[，,、\s]+/, '')).join('\n');
-  return out.trim();
 }
 
 async function sendChat(){
@@ -1309,79 +1136,53 @@ async function sendChat(){
   btn.disabled = true;
   appendMsg('sys', '思考中…');
 
-  // 把這句話加進對話記錄；只保留最近幾輪，避免資料量過大超過API限制（TPM／每分鐘用量上限）
+  // 把這句話加進對話記錄；只保留最近幾輪，避免資料量過大超過API限制
   chatHistory.push({ role: 'user', content: text });
-  chatHistory = chatHistory.slice(-6);
+  chatHistory = chatHistory.slice(-8);
 
   // 找相關QA時，把最近幾句「客服打的話」合併起來一起比對，而不是只看這一句，
   // 這樣像「我是敏感肌」這種簡短的追問，才不會因為脫離上下文而比對到別的品牌
   const recentUserTurns = chatHistory.filter(m => m.role === 'user').map(m => m.content).join(' ');
 
-  const systemPrompt = `你是信賴生醫的客服夥伴，服務對象是外包客服人員，協助他們組織「可直接複製貼給顧客」的正式回覆。你是懂產品、有溫度的客服前輩，不是照本宣科的機器人：把下面的資料當事實依據，不要整段照抄，用自然口語化的繁體中文重新組織。
+  const systemPrompt = `你是信賴生醫的客服夥伴，服務對象是公司的外包客服人員，協助他們組織要回覆給顧客的話。
 
-規則：
-1. 先讀懂客服人員轉述的顧客情境和情緒（著急/困惑/失望/單純問資訊），語氣要對應。
-2. 用自己的話重組資料，不要條列公告文；但規定、金額、時間、通路等事實必須完全忠於資料，不能編造、推測，也不能把A品牌的規定套用到B品牌。
-3. 資料若標示「情況」或「系列」，依客人描述判斷對應內容。
-4. 問題完全不在資料範圍內，就自然回覆「這部分目前還沒有確切的資訊，我們再幫您確認」，並另起一行提醒客服人員要轉交專人，不要編答案。
-5. 這是連續對話，短句（如「我是敏感肌」）要沿用前面同一品牌/主題，除非客服明確換了問題或品牌。
-6. 不能發明資料裡沒出現過的產品名稱；不確定該推薦哪個產品，就說「再幫您確認合適的產品」並提醒客服人員跟品牌方確認。
-7. 不能編造任何具體日期/數字/百分比/期限；資料沒寫確切日期就依資料的引導方式回覆（通常是請客人關注官方通路），絕對不要自己掰數字。
-8.【重要】絕對不能出現「資料庫」「QA」「知識庫」「系統」「根據我們的資料」「根據資料顯示」「經查」這類開場或用詞，也不要用「您想知道…嗎？」這種反問句重複客人問題當開場，要直接自然地把資訊當自己本來就懂的事講出來（例如直接說「SMIB染髮的使用方法是…」）。
-9. 下面「官網產品資料」可用來補充回答成分/用法/膚質等問題，跟QA同等級事實依據、一樣不能加油添醋；若寫「沒有明確使用方法」就老實跟客人說沒有更細節說明。QA與官網資料衝突時以QA為準（較即時）。
+你的角色不是照本宣科的機器人，而是一位真心在乎顧客感受、經驗豐富的客服前輩。請把下面的「客服 QA 資料庫」當成你熟知的產品/政策知識與事實依據，但不要整段照抄資料庫裡的制式回覆逐字貼上。你要做的是：
 
-參考資料：
-【客服QA】
-${buildRelevantKnowledgeBaseText(recentUserTurns, 3)}
+1. 先讀懂客服人員轉述的顧客情境和情緒（是著急？困惑？失望？還是單純想問資訊？），用符合當下情境的語氣回應，展現理解與同理心。
+2. 用你自己的話、自然口語化的繁體中文，把資料庫中的事實、規定、步驟重新組織成一段有溫度、像真人在對話的回覆，而不是條列式的公告文。
+3. 可以視情況調整用詞、順序、開場方式，讓每次的回覆讀起來都不會像是複製貼上的罐頭訊息，但內容中的規定、金額、時間、通路、聯絡方式等事實資訊必須完全忠於下面提供的QA資料，不能自己編造、推測或補充資料裡沒有明確寫出的細節（例如：資料只寫兩個購買通路，就絕對不能自己多加「其他線上平台」「實體店面」等資料裡沒提到的通路；不同品牌的規定即使類似也不能互相套用，要以該品牌自己的QA為準）。
+4. 若資料庫中有標示「情況」或「系列」，請依客人描述判斷屬於哪一種再回覆對應內容。
+5. 若問題完全不在資料庫範圍內，就自然地告訴客服人員「這個我這邊資料庫查不到相關資訊，建議先跟客人說會再確認，並轉交專人處理」，不要編造答案。
+6. 這是一段連續對話，請參考前面的對話紀錄判斷現在在討論哪個品牌/哪個主題。如果客服人員這句話很短（例如只回答「我是敏感肌」這種延續前一句的補充資訊），請沿用同一個品牌/主題繼續回答，不要因為這句話單獨看起來像別的品牌就跳去講別的品牌，除非客服人員明確換了問題或提到別的品牌名稱。
+7. 絕對不能自己發明或衍生資料庫裡沒有出現過的產品名稱（例如資料庫只提到「【修修瓶】」，就不能自己講出「修修水」「修修乳」這種資料庫沒寫過、用類推方式編出來的產品名字）。回覆中提到的每一個產品名稱，都必須是QA資料裡逐字出現過的名稱，如果不確定某個需求該推薦資料庫裡的哪個產品，或資料庫沒有直接對應的推薦，就誠實說「這部分我這邊資料庫沒有明確對應的產品，建議跟品牌方/專人確認後再回覆客人」，不要自己猜測或硬湊一個推薦。
+8. 絕對不能自己編造任何具體的日期、時間、數字、百分比、期限（例如「每個月15號」「7個工作天」「9折」等），除非這個數字是QA資料裡逐字寫出來的。如果客人問的是確切時間點但資料庫沒有明確給出日期（例如下一檔團購、補貨時間），就依照QA資料裡的引導方式回覆（通常是請客人關注官方通路、暫不承諾確切時間），絕對不要自己掰一個聽起來合理的日期或數字出來，這種編造出來的具體資訊比籠統的錯誤更容易誤導客人。
 
-【官網產品資料】
-${buildRelevantProductText(recentUserTurns, 2) || '（無明確相關產品，不用勉強提產品名稱）'}`;
-
-  const requestBody = {
-    model: 'llama-3.1-8b-instant',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...chatHistory
-    ],
-    temperature: 0.3,
-    max_tokens: 500 // 限制回覆長度，避免單次請求用掉太多額度、也讓回覆不會落落長
-  };
+以下是跟目前這段對話最相關的幾筆QA資料（事實依據，不是要你照抄的稿子）：
+${buildRelevantKnowledgeBaseText(recentUserTurns, 6)}`;
 
   try{
-    // AI 服務（Groq）目前用量額度較低，忙碌時偶爾會回「Rate limit」。
-    // 為了讓客服人員感覺對話是連續的、不會被錯誤訊息打斷，這裡自動重試最多2次，
-    // 只有重試完還是失敗，才會顯示錯誤訊息。
-    let data = null;
-    const maxAttempts = 3;
-    for(let attempt = 1; attempt <= maxAttempts; attempt++){
-      const res = await fetch(CHAT_PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-      data = await res.json();
-      const isRateLimit = data.error && /rate limit/i.test(data.error.message || '');
-      if(isRateLimit && attempt < maxAttempts){
-        // 嘗試從錯誤訊息解析「Please try again in Ns」，抓不到就預設等 8 秒
-        const m = /try again in ([\d.]+)s/i.exec(data.error.message || '');
-        const waitSec = m ? Math.min(Math.ceil(parseFloat(m[1])) + 1, 20) : 8;
-        removeLastSysMsg();
-        appendMsg('sys', '思考中…（現在比較忙，稍等一下）');
-        await new Promise(r => setTimeout(r, waitSec * 1000));
-        continue;
-      }
-      break;
-    }
+    const res = await fetch(CHAT_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...chatHistory
+        ],
+        temperature: 0.3
+      })
+    });
+    const data = await res.json();
     removeLastSysMsg();
     if(data.error){
-      const isRateLimit = /rate limit/i.test(data.error.message || '');
-      appendMsg('sys', isRateLimit ? '❌ AI 現在同時使用的人比較多，請稍等幾秒再問一次' : ('❌ 發生錯誤：' + data.error.message));
+      appendMsg('sys', '❌ 發生錯誤：' + data.error.message);
       chatHistory.pop(); // 失敗的話把剛剛那句拿掉，避免記錄裡留下沒有回覆的問題
     } else {
-      const reply = sanitizeAiReply(data.choices?.[0]?.message?.content || '（無回應）');
+      const reply = data.choices?.[0]?.message?.content || '（無回應）';
       appendMsg('bot', reply);
       chatHistory.push({ role: 'assistant', content: reply });
-      chatHistory = chatHistory.slice(-6);
+      chatHistory = chatHistory.slice(-8);
     }
   } catch(e){
     removeLastSysMsg();
@@ -1396,6 +1197,89 @@ function removeLastSysMsg(){
   const box = document.getElementById('chatBox');
   const msgs = box.querySelectorAll('.msg.sys');
   if(msgs.length){ msgs[msgs.length-1].remove(); }
+}
+
+/* ============ 訂單查詢（透過 Cloudflare Worker 中介服務，客服端不需要金鑰）============ */
+// 部署好 SHOPLINE 查詢 Worker 後，把網址貼在這裡（例如 https://trustee-order-lookup.你的帳號.workers.dev）
+const ORDER_PROXY_URL = 'https://curly-poetry-a683trustee-order-lookup.minnie-72b.workers.dev';
+
+const ORDER_STATUS_MAP = {
+  temp: '暫存', pending: '待處理', confirmed: '已確認', completed: '已完成',
+  cancelled: '已取消', removed: '已刪除'
+};
+const DELIVERY_STATUS_MAP = {
+  pending: '未出貨', shipping: '出貨中', shipped: '已出貨',
+  arrived: '已到貨', collected: '已取件', returned: '已退貨', pending_return: '退貨中'
+};
+
+function loadOrderProxyStatus(){
+  const status = document.getElementById('orderProxyStatus');
+  const configured = ORDER_PROXY_URL && !ORDER_PROXY_URL.includes('PASTE_YOUR_ORDER_WORKER_URL_HERE');
+  if(configured){
+    status.textContent = '✅ 訂單查詢已連線';
+    status.className = 'apikey-status ok';
+  } else {
+    status.textContent = '⚠️ 尚未連接訂單查詢服務（管理員需部署 Worker 並填入 ORDER_PROXY_URL）';
+    status.className = 'apikey-status missing';
+  }
+}
+
+async function lookupOrder(){
+  const input = document.getElementById('orderInput');
+  const orderNumber = input.value.trim();
+  const resultBox = document.getElementById('orderResultBox');
+  const btn = document.getElementById('orderSearchBtn');
+
+  if(!orderNumber){
+    resultBox.innerHTML = '<div class="order-error">請輸入訂單號碼</div>';
+    return;
+  }
+  if(!ORDER_PROXY_URL || ORDER_PROXY_URL.includes('PASTE_YOUR_ORDER_WORKER_URL_HERE')){
+    resultBox.innerHTML = '<div class="order-error">⚠️ 訂單查詢服務尚未連接，請聯繫管理員設定 ORDER_PROXY_URL</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  resultBox.innerHTML = '<div class="order-note">查詢中…</div>';
+
+  try{
+    const res = await fetch(ORDER_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order_number: orderNumber })
+    });
+    const data = await res.json();
+    if(!res.ok || data.error){
+      resultBox.innerHTML = `<div class="order-error">❌ ${escapeHtml(data.error || '查詢失敗，請稍後再試')}</div>`;
+      return;
+    }
+    resultBox.innerHTML = renderOrderResult(data.order);
+  } catch(e){
+    resultBox.innerHTML = '<div class="order-error">❌ 連線失敗，請稍後再試或聯繫管理員</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderOrderResult(o){
+  const statusText = ORDER_STATUS_MAP[o.status] || o.status || '—';
+  const deliveryText = DELIVERY_STATUS_MAP[o.delivery_status] || o.delivery_status || '—';
+  const row = (label, value) => `<div class="row"><span class="label">${label}</span><span class="value">${value ? escapeHtml(String(value)) : '—'}</span></div>`;
+  return `
+    <div class="order-result">
+      ${row('訂單號碼', o.order_number)}
+      <div class="row"><span class="label">訂單狀態</span><span class="order-badge">${escapeHtml(statusText)}</span></div>
+      <div class="row"><span class="label">物流狀態</span><span class="order-badge">${escapeHtml(deliveryText)}</span></div>
+      ${row('付款狀態', o.payment_status)}
+      ${row('下單時間', o.created_at)}
+      ${row('出貨時間', o.shipped_at)}
+      ${row('到貨時間', o.arrived_at)}
+      ${row('物流追蹤號碼', o.tracking_number)}
+      ${row('收件人', o.recipient_name_masked)}
+      ${row('收件電話', o.recipient_phone_masked)}
+    </div>
+    <div class="order-note">為保護顧客隱私，姓名／電話僅顯示部分遮蔽；如需完整收件資訊請至 SHOPLINE 後台查詢。</div>
+  `;
 }
 </script>
 </body>
