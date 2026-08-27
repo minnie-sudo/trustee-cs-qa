@@ -1164,7 +1164,7 @@ async function sendChat(){
 
   // 把這句話加進對話記錄；只保留最近幾輪，避免資料量過大超過API限制
   chatHistory.push({ role: 'user', content: text });
-  chatHistory = chatHistory.slice(-8);
+  chatHistory = chatHistory.slice(-6);
 
   // 找相關QA時，把最近幾句「客服打的話」合併起來一起比對，而不是只看這一句，
   // 這樣像「我是敏感肌」這種簡短的追問，才不會因為脫離上下文而比對到別的品牌
@@ -1199,31 +1199,47 @@ async function sendChat(){
 13. 絕對不要自己發明「這個產品可以搭配／配合另一個產品一起使用」這類的組合建議，除非QA資料裡有逐字寫出這個搭配用法。特別是不同類別的產品（例如洗髮/頭皮類產品 vs 臉部保養/洗面乳類產品）絕對不要自己亂配對在一起講，這種編造的產品組合建議會讓客人很困惑，看起來也不專業。如果客人的問題橫跨多個產品類別，就分開、各自根據資料庫講清楚，不要硬把不相關的產品湊在一起講成「可以搭配使用」。
 
 以下是跟目前這段對話最相關的幾筆QA資料（事實依據，不是要你照抄的稿子）：
-${buildRelevantKnowledgeBaseText(recentUserTurns, 8)}`;
+${buildRelevantKnowledgeBaseText(recentUserTurns, 6)}`;
 
   try{
-    const res = await fetch(CHAT_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'openai/gpt-oss-20b',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...chatHistory
-        ],
-        temperature: 0.3
-      })
-    });
-    const data = await res.json();
+    let data, attempt = 0;
+    while(true){
+      const res = await fetch(CHAT_PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'openai/gpt-oss-20b',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...chatHistory
+          ],
+          temperature: 0.3
+        })
+      });
+      data = await res.json();
+      // Groq免費額度偶爾會出現「Rate limit reached」，這種情況不是壞掉，
+      // 是短暫的流量限制，自動等一下再重試，客服不用自己重打一次
+      const isRateLimit = data.error && /rate limit/i.test(data.error.message || '');
+      if(isRateLimit && attempt < 2){
+        attempt++;
+        const waitMatch = (data.error.message || '').match(/try again in ([\d.]+)s/i);
+        const waitSec = waitMatch ? Math.min(parseFloat(waitMatch[1]) + 0.5, 20) : 5;
+        appendMsg('sys', `⏳ AI 服務目前流量較高，${Math.ceil(waitSec)} 秒後自動重試…`);
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        removeLastSysMsg();
+        continue;
+      }
+      break;
+    }
     removeLastSysMsg();
     if(data.error){
-      appendMsg('sys', '❌ 發生錯誤：' + data.error.message);
+      appendMsg('sys', '❌ AI 目前忙線中，請稍等幾秒再重新發問一次，謝謝您的耐心');
       chatHistory.pop(); // 失敗的話把剛剛那句拿掉，避免記錄裡留下沒有回覆的問題
     } else {
       const reply = sanitizeReply(data.choices?.[0]?.message?.content || '（無回應）');
       appendMsg('bot', reply);
       chatHistory.push({ role: 'assistant', content: reply });
-      chatHistory = chatHistory.slice(-8);
+      chatHistory = chatHistory.slice(-6);
     }
   } catch(e){
     removeLastSysMsg();
