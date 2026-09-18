@@ -1134,8 +1134,16 @@ function buildRelevantKnowledgeBaseText(queryText, limit){
       if(score > 0) scored.push({ cat, item, score });
     });
   });
-  scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, limit);
+  // 「現貨供應中/已經補貨上架」這類明確的現貨宣告很容易被誤套到別的色號/規格上，
+  // 所以這類項目額外要求「問題欄位」本身要跟客人問的話有夠高的重疊度，才代表問的是同一件商品，
+  // 這是用程式碼硬性擋掉，不是靠AI自己判斷，比較不會出錯
+  const STOCK_ANSWER_RE = /現貨供應中|已經補貨上架/;
+  const filtered = scored.filter(r => {
+    if(!STOCK_ANSWER_RE.test(r.item.a)) return true;
+    return fieldScore(kwNorm, r.item.q) >= 0.5;
+  });
+  filtered.sort((a, b) => b.score - a.score);
+  const top = filtered.slice(0, limit);
   if(top.length === 0){
     return '（沒有找到明確相關的QA，請依常理誠實回覆客服人員查無資料）';
   }
