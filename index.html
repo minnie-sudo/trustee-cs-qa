@@ -1341,6 +1341,11 @@ async function lookupOrder(){
 
 function renderOrderResult(o){
   const statusText = ORDER_STATUS_MAP[o.status] || o.status || '—';
+  // SHOPLINE系統內部的delivery_status有時候不會同步更新（卡在pending/待處理等狀態），
+  // 只要「是否已出貨」已經判斷為已出貨（用實際出貨時間判斷，比較準），這種矛盾又沒用的
+  // 內部狀態就直接不顯示，避免誤導客服；異常狀態（退貨/配送失敗/過期）還是要顯示提醒
+  const notYetStates = ['pending', 'request_accepted', 'request_authorized', 'request_submitted'];
+  const hideDeliveryDetail = (o.is_shipped === true && notYetStates.includes(o.delivery_status));
   const deliveryText = DELIVERY_STATUS_MAP[o.delivery_status] || o.delivery_status || '—';
   const row = (label, value) => `<div class="row"><span class="label">${label}</span><span class="value">${value ? escapeHtml(String(value)) : '—'}</span></div>`;
 
@@ -1361,7 +1366,7 @@ function renderOrderResult(o){
       <div class="row"><span class="label">訂單狀態</span><span class="order-badge">${escapeHtml(statusText)}</span></div>
       <div class="row"><span class="label">收貨方式</span><span class="value">${escapeHtml(methodText)}</span></div>
       <div class="row"><span class="label">是否已出貨</span><span class="apikey-status ${shippedClass}" style="display:inline;margin:0;">${escapeHtml(shippedBadge)}</span></div>
-      <div class="row"><span class="label">物流狀態(細節)</span><span class="order-badge">${escapeHtml(deliveryText)}</span></div>
+      ${hideDeliveryDetail ? '' : `<div class="row"><span class="label">物流狀態(細節)</span><span class="order-badge">${escapeHtml(deliveryText)}</span></div>`}
       ${row('付款狀態', o.payment_status)}
       ${row('下單時間', o.created_at)}
       ${row('出貨時間', o.shipped_at)}
